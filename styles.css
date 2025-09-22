@@ -101,7 +101,7 @@ textarea { resize: vertical; }
 .modal.hidden { display: none !important; }
 .modal { position: fixed; inset: 0; display: grid; place-items: center; z-index: 50; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.5); backdrop-filter: blur(3px); }
-.modal-dialog { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; width: min(92vw, 360px); box-shadow: 0 40px 100px rgba(0,0,0,.45); display: grid; gap: 12px; backdrop-filter: var(--glass); animation: scaleIn 220ms ease-out; }
+.modal-dialog { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; width: min(92vw, 320px); box-shadow: 0 40px 100px rgba(0,0,0,.45); display: grid; gap: 12px; backdrop-filter: var(--glass); animation: scaleIn 220ms ease-out; }
 .modal-actions { display: grid; gap: 8px; }
 .modal-close { position: absolute; top: 8px; right: 8px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; }
 .small { font-size: 12px; }
