@@ -66,15 +66,81 @@
   const authModalTitle = document.getElementById('auth-modal-title');
   const heroCta = document.getElementById('btn-hero-cta');
   const heroExplore = document.getElementById('btn-hero-secondary');
+  const btnTileShare = document.getElementById('btn-tile-share');
+  const btnTileLearn = document.getElementById('btn-tile-learn');
+  const btnTileTip = document.getElementById('btn-tile-tip');
 
   // ---------- Initialization ----------
   function init() {
     yearEl.textContent = new Date().getFullYear();
+    seedSkillsIfEmpty();
     renderAuthUI();
     renderSkills();
     attachEvents();
     initGoogle();
     initFacebook();
+  }
+
+  function seedSkillsIfEmpty() {
+    if (Array.isArray(skills) && skills.length > 0) return;
+    const now = Date.now();
+    const minutes = (m) => m * 60 * 1000;
+    const hours = (h) => h * 60 * 60 * 1000;
+    const days = (d) => d * 24 * 60 * 60 * 1000;
+    const seeded = [
+      {
+        id: generateId('skill'),
+        title: 'Beginner JavaScript Mentoring',
+        rate: 25,
+        description: 'One-on-one sessions to learn JS fundamentals, DOM, and problem solving.',
+        owner: { id: 'u_js_anna', name: 'Anna Morales', email: '', photoUrl: 'https://randomuser.me/api/portraits/women/68.jpg' },
+        createdAt: now - hours(3),
+        tags: ['JavaScript', 'DOM', 'Beginners'],
+        tips: []
+      },
+      {
+        id: generateId('skill'),
+        title: 'Watercolor Painting Techniques',
+        rate: 30,
+        description: 'Learn washes, wet-on-wet, blending, and composition for relaxing art.',
+        owner: { id: 'u_art_noah', name: 'Noah Bennett', email: '', photoUrl: 'https://randomuser.me/api/portraits/men/32.jpg' },
+        createdAt: now - days(1) - minutes(25),
+        tags: ['Watercolor', 'Art', 'Composition'],
+        tips: []
+      },
+      {
+        id: generateId('skill'),
+        title: 'Financial Literacy for Teens',
+        rate: 20,
+        description: 'Budgeting, saving, and the basics of investing explained simply.',
+        owner: { id: 'u_fin_sophia', name: 'Sophia Turner', email: '', photoUrl: 'https://randomuser.me/api/portraits/women/12.jpg' },
+        createdAt: now - days(2) - hours(5),
+        tags: ['Finance', 'Teens', 'Budgeting'],
+        tips: []
+      },
+      {
+        id: generateId('skill'),
+        title: 'Gardening 101: Balcony to Backyard',
+        rate: 18,
+        description: 'Soil, sunlight, watering, and plant selection for any space.',
+        owner: { id: 'u_garden_elinor', name: 'Elinor Hayes', email: '', photoUrl: 'https://randomuser.me/api/portraits/women/71.jpg' },
+        createdAt: now - days(4) - hours(2),
+        tags: ['Gardening', 'Sustainability', 'Outdoors'],
+        tips: []
+      },
+      {
+        id: generateId('skill'),
+        title: 'Intro to Python for Data',
+        rate: 35,
+        description: 'Pandas, NumPy, and plotting for quick insights and reports.',
+        owner: { id: 'u_data_ari', name: 'Ari Cohen', email: '', photoUrl: 'https://randomuser.me/api/portraits/men/41.jpg' },
+        createdAt: now - days(6) - hours(8),
+        tags: ['Python', 'Pandas', 'Data Viz'],
+        tips: []
+      }
+    ];
+    skills = seeded;
+    saveToStorage(STORAGE_KEYS.skills, skills);
   }
 
   function attachEvents() {
@@ -98,6 +164,19 @@
     }
     if (heroCta) heroCta.addEventListener('click', () => openAuthModal('Sign up'));
     if (heroExplore) heroExplore.addEventListener('click', () => {
+      document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
+    });
+    if (btnTileShare) btnTileShare.addEventListener('click', () => {
+      if (authState) {
+        document.getElementById('create-skill')?.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        openAuthModal('Sign up');
+      }
+    });
+    if (btnTileLearn) btnTileLearn.addEventListener('click', () => {
+      document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
+    });
+    if (btnTileTip) btnTileTip.addEventListener('click', () => {
       document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
     });
   }
@@ -201,6 +280,7 @@
         </div>
         <div class="title">${escapeHtml(skill.title)}</div>
         <div class="description">${escapeHtml(skill.description)}</div>
+        ${renderTags(skill.tags)}
         <div class="rate">Rate: ${formatCurrency(skill.rate)}/hr</div>
         <div class="tip">
           <input type="number" min="1" step="1" placeholder="Tip $" aria-label="Tip amount">
@@ -216,7 +296,7 @@
   }
 
   function onTip(skillId, amount) {
-    if (!authState) return alert('Please sign in to tip creators.');
+    if (!authState) { openAuthModal('Sign in'); return; }
     if (!amount || amount <= 0) return alert('Enter a valid tip amount.');
     const idx = skills.findIndex(s => s.id === skillId);
     if (idx === -1) return;
@@ -238,6 +318,12 @@
     const initial = (name || 'U').trim()[0]?.toUpperCase() || 'U';
     // Use UI Avatars as a simple placeholder
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1f2937&color=f8fafc&rounded=true&size=64`;
+  }
+
+  function renderTags(tags) {
+    if (!tags || !tags.length) return '';
+    const safe = tags.map(t => `<span class="tag">${escapeHtml(String(t))}</span>`).join('');
+    return `<div class="tags">${safe}</div>`;
   }
 
   // ---------- Google OAuth (GIS) ----------
