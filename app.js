@@ -58,7 +58,7 @@
   const skillDesc = document.getElementById('skill-description');
   const skillsList = document.getElementById('skills-list');
   const emptyState = document.getElementById('empty-state');
-  const searchInput = document.getElementById('search');
+  const searchInput = null; // search removed
   const authModal = document.getElementById('auth-modal');
   const authModalClose = document.getElementById('auth-modal-close');
   const btnModalGoogle = document.getElementById('btn-modal-google');
@@ -159,9 +159,7 @@
     if (skillForm) {
       skillForm.addEventListener('submit', onCreateSkill);
     }
-    if (searchInput) {
-      searchInput.addEventListener('input', renderSkills);
-    }
+    // search removed
     if (heroCta) heroCta.addEventListener('click', () => openAuthModal('Sign up'));
     if (heroExplore) heroExplore.addEventListener('click', () => {
       document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
@@ -249,7 +247,7 @@
   }
 
   function getFilteredSkills() {
-    const q = (searchInput.value || '').toLowerCase();
+    const q = '';
     if (!q) return skills;
     return skills.filter(s =>
       s.title.toLowerCase().includes(q) ||
