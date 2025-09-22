@@ -1,0 +1,366 @@
+(function() {
+  'use strict';
+
+  // ---------- Utilities ----------
+  const STORAGE_KEYS = {
+    auth: 'unitedseeds.auth',
+    skills: 'unitedseeds.skills'
+  };
+
+  function loadFromStorage(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) {
+      console.error('Failed to parse localStorage key', key, e);
+      return fallback;
+    }
+  }
+
+  function saveToStorage(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.error('Failed to save localStorage key', key, e);
+    }
+  }
+
+  function generateId(prefix) {
+    return `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+  }
+
+  function formatCurrency(amount) {
+    const n = Number(amount || 0);
+    return `$${n.toFixed(2)}`;
+  }
+
+  // ---------- App State ----------
+  let authState = loadFromStorage(STORAGE_KEYS.auth, null);
+  let skills = loadFromStorage(STORAGE_KEYS.skills, []);
+
+  // ---------- DOM Elements ----------
+  const yearEl = document.getElementById('year');
+  const authOutEl = document.getElementById('auth-when-signed-out');
+  const authInEl = document.getElementById('auth-when-signed-in');
+  const btnOpenSignin = document.getElementById('btn-open-signin');
+  const btnOpenSignup = document.getElementById('btn-open-signup');
+  const btnSignout = document.getElementById('btn-signout');
+
+  const profilePic = document.getElementById('profile-picture');
+  const profileName = document.getElementById('profile-name');
+  const profileEmail = document.getElementById('profile-email');
+
+  const landing = document.getElementById('landing');
+  const createSkill = document.getElementById('create-skill');
+  const skillForm = document.getElementById('skill-form');
+  const skillTitle = document.getElementById('skill-title');
+  const skillRate = document.getElementById('skill-rate');
+  const skillDesc = document.getElementById('skill-description');
+  const skillsList = document.getElementById('skills-list');
+  const emptyState = document.getElementById('empty-state');
+  const searchInput = document.getElementById('search');
+  const authModal = document.getElementById('auth-modal');
+  const authModalClose = document.getElementById('auth-modal-close');
+  const btnModalGoogle = document.getElementById('btn-modal-google');
+  const btnModalFacebook = document.getElementById('btn-modal-facebook');
+  const authModalTitle = document.getElementById('auth-modal-title');
+  const heroCta = document.getElementById('btn-hero-cta');
+  const heroExplore = document.getElementById('btn-hero-secondary');
+
+  // ---------- Initialization ----------
+  function init() {
+    yearEl.textContent = new Date().getFullYear();
+    renderAuthUI();
+    renderSkills();
+    attachEvents();
+    initGoogle();
+    initFacebook();
+  }
+
+  function attachEvents() {
+    if (btnOpenSignin) btnOpenSignin.addEventListener('click', () => openAuthModal('Sign in'));
+    if (btnOpenSignup) btnOpenSignup.addEventListener('click', () => openAuthModal('Sign up'));
+    if (btnModalGoogle) btnModalGoogle.addEventListener('click', onGoogleSignInClick);
+    if (btnModalFacebook) btnModalFacebook.addEventListener('click', onFacebookSignInClick);
+    if (authModalClose) authModalClose.addEventListener('click', closeAuthModal);
+    if (authModal) authModal.addEventListener('click', (e) => {
+      const target = e.target;
+      if (target && target.getAttribute && target.getAttribute('data-close') === 'true') closeAuthModal();
+    });
+    if (btnSignout) {
+      btnSignout.addEventListener('click', signOut);
+    }
+    if (skillForm) {
+      skillForm.addEventListener('submit', onCreateSkill);
+    }
+    if (searchInput) {
+      searchInput.addEventListener('input', renderSkills);
+    }
+    if (heroCta) heroCta.addEventListener('click', () => openAuthModal('Sign up'));
+    if (heroExplore) heroExplore.addEventListener('click', () => {
+      document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  function openAuthModal(mode) {
+    if (authModalTitle) authModalTitle.textContent = `Continue to ${mode}`;
+    authModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeAuthModal() {
+    authModal.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  // ---------- Auth UI ----------
+  function renderAuthUI() {
+    const signedIn = Boolean(authState);
+    if (signedIn) {
+      authOutEl.classList.add('hidden');
+      authInEl.classList.remove('hidden');
+      landing.classList.add('hidden');
+      createSkill.classList.remove('hidden');
+      profilePic.src = authState.photoUrl || '';
+      profileName.textContent = authState.name || '';
+      profileEmail.textContent = authState.email || '';
+    } else {
+      authOutEl.classList.remove('hidden');
+      authInEl.classList.add('hidden');
+      landing.classList.remove('hidden');
+      createSkill.classList.add('hidden');
+      profilePic.src = '';
+      profileName.textContent = '';
+      profileEmail.textContent = '';
+    }
+  }
+
+  function signOut() {
+    authState = null;
+    saveToStorage(STORAGE_KEYS.auth, authState);
+    renderAuthUI();
+  }
+
+  // ---------- Skills ----------
+  function onCreateSkill(e) {
+    e.preventDefault();
+    if (!authState) return alert('Please sign in to share a skill.');
+    const title = (skillTitle.value || '').trim();
+    const rate = Number(skillRate.value || 0);
+    const description = (skillDesc.value || '').trim();
+    if (!title || !description) return;
+    const newSkill = {
+      id: generateId('skill'),
+      title,
+      rate,
+      description,
+      owner: {
+        id: authState.userId,
+        name: authState.name,
+        email: authState.email,
+        photoUrl: authState.photoUrl
+      },
+      createdAt: Date.now(),
+      tips: [] // { by:{name, photoUrl}, amount, note, at }
+    };
+    skills.unshift(newSkill);
+    saveToStorage(STORAGE_KEYS.skills, skills);
+    skillForm.reset();
+    renderSkills();
+  }
+
+  function getFilteredSkills() {
+    const q = (searchInput.value || '').toLowerCase();
+    if (!q) return skills;
+    return skills.filter(s =>
+      s.title.toLowerCase().includes(q) ||
+      s.description.toLowerCase().includes(q) ||
+      (s.owner?.name || '').toLowerCase().includes(q)
+    );
+  }
+
+  function renderSkills() {
+    const items = getFilteredSkills();
+    skillsList.innerHTML = '';
+    if (!items.length) {
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    emptyState.classList.add('hidden');
+    const frag = document.createDocumentFragment();
+    items.forEach(skill => {
+      const card = document.createElement('div');
+      card.className = 'skill-card';
+      card.innerHTML = `
+        <div class="owner">
+          <img class="avatar" src="${skill.owner.photoUrl || getAvatarPlaceholder(skill.owner.name)}" alt="${skill.owner.name}">
+          <div>
+            <div class="owner-name">${escapeHtml(skill.owner.name || 'Anonymous')}</div>
+            <div class="meta">${new Date(skill.createdAt).toLocaleString()}</div>
+          </div>
+        </div>
+        <div class="title">${escapeHtml(skill.title)}</div>
+        <div class="description">${escapeHtml(skill.description)}</div>
+        <div class="rate">Rate: ${formatCurrency(skill.rate)}/hr</div>
+        <div class="tip">
+          <input type="number" min="1" step="1" placeholder="Tip $" aria-label="Tip amount">
+          <button class="btn btn-secondary">Tip</button>
+        </div>
+      `;
+      const tipInput = card.querySelector('input');
+      const tipBtn = card.querySelector('button');
+      tipBtn.addEventListener('click', () => onTip(skill.id, Number(tipInput.value || 0)));
+      frag.appendChild(card);
+    });
+    skillsList.appendChild(frag);
+  }
+
+  function onTip(skillId, amount) {
+    if (!authState) return alert('Please sign in to tip creators.');
+    if (!amount || amount <= 0) return alert('Enter a valid tip amount.');
+    const idx = skills.findIndex(s => s.id === skillId);
+    if (idx === -1) return;
+    skills[idx].tips.push({
+      by: { name: authState.name, photoUrl: authState.photoUrl },
+      amount,
+      note: '',
+      at: Date.now()
+    });
+    saveToStorage(STORAGE_KEYS.skills, skills);
+    alert(`Thank you! You tipped ${formatCurrency(amount)} to ${skills[idx].owner.name}.`);
+  }
+
+  function escapeHtml(str) {
+    return (str || '').replace(/[&<>"]+/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  function getAvatarPlaceholder(name) {
+    const initial = (name || 'U').trim()[0]?.toUpperCase() || 'U';
+    // Use UI Avatars as a simple placeholder
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1f2937&color=f8fafc&rounded=true&size=64`;
+  }
+
+  // ---------- Google OAuth (GIS) ----------
+  let googleInited = false;
+  function initGoogle() {
+    const clientId = window.UNITEDSEEDS_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId.startsWith('YOUR_')) return; // not configured
+    // Button uses One Tap style flow via popup token
+    googleInited = true;
+  }
+
+  async function onGoogleSignInClick() {
+    const clientId = window.UNITEDSEEDS_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId.startsWith('YOUR_')) {
+      alert('Google Sign-In not configured. Set UNITEDSEEDS_GOOGLE_CLIENT_ID in index.html');
+      return;
+    }
+    /* global google */
+    try {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'openid email profile',
+        callback: async (resp) => {
+          if (resp.error) throw resp;
+          // Get user info with the token
+          const user = await fetchGoogleUser(resp.access_token);
+          signInWithProfile({
+            provider: 'google',
+            userId: user.sub,
+            email: user.email,
+            name: user.name,
+            photoUrl: user.picture
+          });
+        }
+      });
+      tokenClient.requestAccessToken();
+    } catch (e) {
+      console.error('Google sign-in failed', e);
+      alert('Google sign-in failed. Check console for details.');
+    }
+    closeAuthModal();
+  }
+
+  async function fetchGoogleUser(accessToken) {
+    const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch Google user');
+    return resp.json();
+  }
+
+  // ---------- Facebook OAuth ----------
+  let fbInited = false;
+  function initFacebook() {
+    const appId = window.UNITEDSEEDS_FACEBOOK_APP_ID;
+    if (!appId || appId.startsWith('YOUR_')) return; // not configured
+    if (fbInited) return;
+    window.fbAsyncInit = function() {
+      /* global FB */
+      FB.init({
+        appId: appId,
+        cookie: true,
+        xfbml: false,
+        version: 'v21.0'
+      });
+      fbInited = true;
+    };
+    (function(d, s, id) {
+      const fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) { fbInited = true; return; }
+      const js = d.createElement(s); js.id = id; js.src = 'https://connect.facebook.net/en_US/sdk.js';
+      fjs.parentNode.insertBefore(js, fjs);
+    })(document, 'script', 'facebook-jssdk');
+  }
+
+  function onFacebookSignInClick() {
+    const appId = window.UNITEDSEEDS_FACEBOOK_APP_ID;
+    if (!appId || appId.startsWith('YOUR_')) {
+      alert('Facebook Login not configured. Set UNITEDSEEDS_FACEBOOK_APP_ID in index.html');
+      return;
+    }
+    /* global FB */
+    FB.login(async (response) => {
+      if (response.authResponse) {
+        try {
+          const user = await fetchFacebookUser();
+          signInWithProfile({
+            provider: 'facebook',
+            userId: user.id,
+            email: user.email || '',
+            name: user.name,
+            photoUrl: `https://graph.facebook.com/${user.id}/picture?type=large`
+          });
+        } catch (e) {
+          console.error('FB user fetch failed', e);
+          alert('Facebook sign-in failed.');
+        }
+      } else {
+        console.warn('User cancelled FB login or did not fully authorize.');
+      }
+    }, { scope: 'public_profile,email' });
+    closeAuthModal();
+  }
+
+  async function fetchFacebookUser() {
+    return new Promise((resolve, reject) => {
+      /* global FB */
+      FB.api('/me', { fields: 'id,name,email' }, function(response) {
+        if (!response || response.error) reject(response?.error || new Error('FB API error'));
+        else resolve(response);
+      });
+    });
+  }
+
+  // ---------- Shared auth helper ----------
+  function signInWithProfile(profile) {
+    authState = profile;
+    saveToStorage(STORAGE_KEYS.auth, authState);
+    renderAuthUI();
+  }
+
+  // ---------- Boot ----------
+  document.addEventListener('DOMContentLoaded', init);
+})();
+
+

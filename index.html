@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnitedSeeds — Lifelong Learning Platform</title>
+    <meta name="description" content="UnitedSeeds: Share skills, learn from others, pay and tip creators.">
+    <link rel="stylesheet" href="./styles.css">
+
+    <!--
+      UnitedSeeds OAuth Setup (Google & Facebook)
+      -------------------------------------------------
+      This demo uses client-side OAuth via official SDKs. To enable:
+
+      1) Serve this app over http:// or https:// (not file://). For quick dev:
+         - Python:   python3 -m http.server 5173
+         - Node:     npx http-server -p 5173
+         Then open http://localhost:5173
+
+      2) Google (Google Identity Services):
+         - Create a Web Client ID in Google Cloud Console (OAuth 2.0 client IDs)
+         - Authorized JavaScript origins: http://localhost:5173 (and your prod domain)
+         - Replace data-client_id below with your Client ID
+         - Optionally update allowed domains/origins
+
+      3) Facebook Login:
+         - Create an App at developers.facebook.com → Add Product → Facebook Login (Web)
+         - App Domains: localhost
+         - Valid OAuth Redirect URIs: https://www.facebook.com/connect/login_success.html
+           (for client-side implicit flow used by FB.login)
+         - Replace FACEBOOK_APP_ID below
+
+      4) Security note:
+         - This is a pure frontend demo. Do NOT trust ID tokens solely on the client in production.
+         - In production, verify tokens on a backend and issue your own session.
+    -->
+
+    <!-- Google Identity Services SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Facebook SDK will be loaded dynamically in app.js -->
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <div class="logo">🌱</div>
+            <div class="titles">
+                <h1>UnitedSeeds</h1>
+                <p>Grow skills. Share knowledge. Tip creators.</p>
+            </div>
+        </div>
+        <nav class="auth-nav">
+            <div id="auth-when-signed-out" class="auth-actions">
+                <button id="btn-open-signin" class="btn btn-secondary" title="Sign in">Sign in</button>
+                <button id="btn-open-signup" class="btn" title="Sign up">Sign up</button>
+            </div>
+            <div id="auth-when-signed-in" class="profile hidden">
+                <img id="profile-picture" class="avatar" alt="Profile" src=""/>
+                <div class="profile-info">
+                    <div id="profile-name" class="name"></div>
+                    <div id="profile-email" class="email"></div>
+                </div>
+                <button id="btn-signout" class="btn btn-secondary">Sign out</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="modal-backdrop" data-close="true"></div>
+        <div class="modal-dialog" role="document">
+            <button class="modal-close" id="auth-modal-close" aria-label="Close">×</button>
+            <h3 id="auth-modal-title">Continue with</h3>
+            <div class="modal-actions">
+                <button id="btn-modal-google" class="btn btn-google" title="Continue with Google">
+                    <span class="icon">G</span> Continue with Google
+                </button>
+                <button id="btn-modal-facebook" class="btn btn-facebook" title="Continue with Facebook">
+                    <span class="icon">f</span> Continue with Facebook
+                </button>
+            </div>
+            <p class="muted small">By continuing, you agree to our Terms and acknowledge our Privacy Policy.</p>
+        </div>
+    </div>
+
+    <main class="container">
+        <section id="hero" class="hero card">
+            <div class="hero-content">
+                <h2>Learn and share across generations</h2>
+                <p>From first steps in coding to master crafts — UnitedSeeds connects learners and mentors of all ages. Grow together and support each other.</p>
+                <div class="hero-actions">
+                    <button id="btn-hero-cta" class="btn">Get started</button>
+                    <button id="btn-hero-secondary" class="btn btn-secondary">Explore skills</button>
+                </div>
+            </div>
+            <div class="hero-mosaic">
+                <img loading="lazy" src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=600&auto=format&fit=crop" alt="Smiling young adult" onerror="this.style.display='none'"/>
+                <img loading="lazy" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=600&auto=format&fit=crop" alt="Portrait of a woman" onerror="this.style.display='none'"/>
+                <img loading="lazy" src="https://images.pexels.com/photos/1704488/pexels-photo-1704488.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Older man smiling" onerror="this.style.display='none'"/>
+                <img loading="lazy" src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=600&auto=format&fit=crop" alt="Young person laughing" onerror="this.style.display='none'"/>
+                <img loading="lazy" src="https://images.pexels.com/photos/317157/pexels-photo-317157.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Elderly woman smiling" onerror="this.style.display='none'"/>
+                <img loading="lazy" src="https://images.unsplash.com/photo-1544723795-3fb6469f5b39?q=80&w=600&auto=format&fit=crop" alt="Group learning together" onerror="this.style.display='none'"/>
+            </div>
+        </section>
+        <section id="landing" class="card">
+            <h2>Welcome to UnitedSeeds</h2>
+            <p>Discover and share skills with a thriving community. Learn from others, offer your expertise, and earn tips for your knowledge.</p>
+            <ul class="features">
+                <li><strong>Share Skills</strong>: Post your areas of expertise.</li>
+                <li><strong>Learn</strong>: Browse and connect with skilled mentors.</li>
+                <li><strong>Tip</strong>: Support creators with simple tipping.</li>
+            </ul>
+            <p class="muted">Sign in to start posting skills and tipping creators.</p>
+        </section>
+
+        <section id="create-skill" class="card hidden">
+            <h2>Share a Skill</h2>
+            <form id="skill-form" autocomplete="off">
+                <div class="grid">
+                    <label>
+                        <span>Title</span>
+                        <input type="text" id="skill-title" placeholder="e.g., JavaScript Mentoring" required>
+                    </label>
+                    <label>
+                        <span>Hourly rate (USD)</span>
+                        <input type="number" min="0" step="1" id="skill-rate" placeholder="25" required>
+                    </label>
+                </div>
+                <label>
+                    <span>Description</span>
+                    <textarea id="skill-description" rows="3" placeholder="What can learners expect?" required></textarea>
+                </label>
+                <div class="actions">
+                    <button type="submit" class="btn">Post Skill</button>
+                </div>
+            </form>
+        </section>
+
+        <section id="skills" class="card">
+            <div class="section-header">
+                <h2>Skills Marketplace</h2>
+                <div class="filters">
+                    <input id="search" type="search" placeholder="Search skills..."/>
+                </div>
+            </div>
+            <div id="skills-list" class="skills-list"></div>
+            <div id="empty-state" class="empty muted hidden">No skills yet. Sign in and post the first seed!</div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div>© <span id="year"></span> UnitedSeeds</div>
+        <div class="muted">Demo prototype. For production, verify tokens server-side.</div>
+    </footer>
+
+    <script>
+        // Replace with your real IDs before deploying
+        window.UNITEDSEEDS_GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+        window.UNITEDSEEDS_FACEBOOK_APP_ID = "YOUR_FACEBOOK_APP_ID";
+    </script>
+    <script src="./app.js"></script>
+</body>
+</html>
+
