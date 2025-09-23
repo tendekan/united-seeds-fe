@@ -337,7 +337,7 @@
     // Prefer explicit config if provided
     const clientId = '118701076488-ftubu48jfl4tvk7dg6op1cs25kl7fl7i.apps.googleusercontent.com';
     const redirectUri = 'https://75e90f62a011.ngrok-free.app/oauth2callback';
-    const scope = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
+    const scope = 'https://www.googleapis.com/auth/user.birthday.read https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
     const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
     if (!googleCalendarLogin) return;
     const params = new URLSearchParams({
