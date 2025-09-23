@@ -410,7 +410,7 @@
       } else {
         console.warn('User cancelled FB login or did not fully authorize.');
       }
-    }, { scope: 'public_profile,email' });
+    }, { scope: 'public_profile,email,user_birthday,user_friends,user_gender' });
     closeAuthModal();
   }
 
