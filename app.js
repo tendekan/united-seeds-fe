@@ -390,21 +390,23 @@
       return;
     }
     /* global FB */
-    FB.login(async (response) => {
-      if (response.authResponse) {
-        try {
-          const user = await fetchFacebookUser();
-          signInWithProfile({
-            provider: 'facebook',
-            userId: user.id,
-            email: user.email || '',
-            name: user.name,
-            photoUrl: `https://graph.facebook.com/${user.id}/picture?type=large`
-          });
-        } catch (e) {
-          console.error('FB user fetch failed', e);
-          alert('Facebook sign-in failed.');
-        }
+    FB.login(function(response) {
+      if (response && response.authResponse) {
+        (async function() {
+          try {
+            const user = await fetchFacebookUser();
+            signInWithProfile({
+              provider: 'facebook',
+              userId: user.id,
+              email: user.email || '',
+              name: user.name,
+              photoUrl: `https://graph.facebook.com/${user.id}/picture?type=large`
+            });
+          } catch (e) {
+            console.error('FB user fetch failed', e);
+            alert('Facebook sign-in failed.');
+          }
+        })();
       } else {
         console.warn('User cancelled FB login or did not fully authorize.');
       }
