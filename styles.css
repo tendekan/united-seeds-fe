@@ -56,7 +56,9 @@ html, body {
 .composer textarea { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 12px 14px; }
 .composer textarea.narrow { max-width: 720px; }
 .composer select { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 12px 14px; }
+.composer select.compact { padding: 6px 8px; font-size: 12px; }
 .composer input[type="file"] { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; }
+.composer input[type="file"].compact { padding: 6px 8px; font-size: 12px; }
 .composer .grid { gap: 16px; margin-bottom: 14px; }
 .composer label { margin-bottom: 12px; }
 .posts-list { display: grid; gap: 10px; }
