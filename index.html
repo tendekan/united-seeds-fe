@@ -248,10 +248,30 @@
                         </div>
                     </div>
                     <div id="settings-view" class="settings-view hidden">
-                        <label class="radio">
-                            <input type="radio" name="dating_profile" id="opt-use-profile-dating" checked>
+                        <label class="check">
+                            <input type="checkbox" id="opt-use-profile-dating" checked>
                             <span>Use profile for dating</span>
                         </label>
+                        <div class="settings-grid">
+                            <label>
+                                <span>Default language</span>
+                                <select id="settings-language">
+                                    <option value="en">English</option>
+                                    <option value="bg">Bulgarian</option>
+                                    <option value="ro">Romanian</option>
+                                    <option value="sv">Swedish</option>
+                                    <option value="nl">Dutch</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Preferred currency</span>
+                                <select id="settings-currency">
+                                    <option value="EUR">EUR</option>
+                                    <option value="BGN">BGN</option>
+                                    <option value="RON">RON</option>
+                                </select>
+                            </label>
+                        </div>
                     </div>
                     <div id="posts-list" class="posts-list"></div>
                 </section>

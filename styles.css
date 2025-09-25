@@ -65,8 +65,14 @@ html, body {
 .composer .grid { gap: 6px; margin-bottom: 14px; grid-template-columns: 1fr; }
 .composer label { margin-bottom: 12px; }
 .posts-list { display: grid; gap: 10px; }
-.settings-view { display: grid; gap: 10px; }
-.radio { display: inline-flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); padding: 8px 10px; border-radius: 10px; }
+.settings-view { display: grid; gap: 12px; }
+.check { display: inline-flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); padding: 8px 10px; border-radius: 10px; }
+.settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.settings-view select { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; }
+
+@media (max-width: 720px) {
+  .settings-grid { grid-template-columns: 1fr; }
+}
 .post-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
 .post-header { display: flex; align-items: center; gap: 8px; }
 .post-meta { color: var(--muted); font-size: 12px; }

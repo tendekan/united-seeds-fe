@@ -81,6 +81,9 @@
   const postsList = document.getElementById('posts-list');
   const servicesView = document.getElementById('services-view');
   const settingsView = document.getElementById('settings-view');
+  const chkUseProfileDating = document.getElementById('opt-use-profile-dating');
+  const settingsLanguage = document.getElementById('settings-language');
+  const settingsCurrency = document.getElementById('settings-currency');
   const postCategory = document.getElementById('post-category');
   const postSubcategory = document.getElementById('post-subcategory');
 
@@ -198,6 +201,31 @@
     if (btnPost) btnPost.addEventListener('click', onCreatePost);
     setupCategories();
     setupServiceTileRouting();
+    setupSettings();
+  }
+
+  const SETTINGS_KEY = 'unitedseeds.settings';
+  function setupSettings() {
+    const s = loadFromStorage(SETTINGS_KEY, {
+      useProfileForDating: true,
+      language: 'en',
+      currency: 'EUR'
+    });
+    if (chkUseProfileDating) chkUseProfileDating.checked = !!s.useProfileForDating;
+    if (settingsLanguage) settingsLanguage.value = s.language || 'en';
+    if (settingsCurrency) settingsCurrency.value = s.currency || 'EUR';
+    if (chkUseProfileDating) chkUseProfileDating.addEventListener('change', persistSettings);
+    if (settingsLanguage) settingsLanguage.addEventListener('change', persistSettings);
+    if (settingsCurrency) settingsCurrency.addEventListener('change', persistSettings);
+  }
+
+  function persistSettings() {
+    const s = {
+      useProfileForDating: chkUseProfileDating ? chkUseProfileDating.checked : true,
+      language: settingsLanguage ? settingsLanguage.value : 'en',
+      currency: settingsCurrency ? settingsCurrency.value : 'EUR'
+    };
+    saveToStorage(SETTINGS_KEY, s);
   }
 
   const CATEGORY_LABELS = [
