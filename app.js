@@ -78,6 +78,7 @@
   const postText = document.getElementById('post-text');
   const btnPost = document.getElementById('btn-post');
   const postsList = document.getElementById('posts-list');
+  const servicesView = document.getElementById('services-view');
 
   // ---------- Initialization ----------
   function init() {
@@ -281,10 +282,17 @@
   }
 
   function showSection(section) {
+    // default hidden
+    if (composer) composer.classList.add('hidden');
+    if (servicesView) servicesView.classList.add('hidden');
+    if (postsList) postsList.classList.add('hidden');
+
     if (section === 'create') {
-      composer.classList.remove('hidden');
+      if (composer) composer.classList.remove('hidden');
+    } else if (section === 'services') {
+      if (servicesView) servicesView.classList.remove('hidden');
     } else {
-      composer.classList.add('hidden');
+      if (postsList) postsList.classList.remove('hidden');
     }
   }
 
