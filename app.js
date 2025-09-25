@@ -211,8 +211,13 @@
       authOutEl.classList.add('hidden');
       authInEl.classList.remove('hidden');
       landing.classList.add('hidden');
+      // Hide all pre-login sections for a clean app shell view
+      const hero = document.getElementById('hero');
+      const skillsSection = document.getElementById('skills');
+      if (hero) hero.classList.add('hidden');
+      if (skillsSection) skillsSection.classList.add('hidden');
       appShell.classList.remove('hidden');
-      createSkill.classList.remove('hidden');
+      createSkill.classList.add('hidden');
       profilePic.src = authState.photoUrl || '';
       profileName.textContent = authState.name || '';
       profileEmail.textContent = authState.email || '';
@@ -221,6 +226,10 @@
       authOutEl.classList.remove('hidden');
       authInEl.classList.add('hidden');
       landing.classList.remove('hidden');
+      const hero = document.getElementById('hero');
+      const skillsSection = document.getElementById('skills');
+      if (hero) hero.classList.remove('hidden');
+      if (skillsSection) skillsSection.classList.remove('hidden');
       appShell.classList.add('hidden');
       createSkill.classList.add('hidden');
       profilePic.src = '';
