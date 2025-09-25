@@ -53,8 +53,12 @@ html, body {
 .menu-item:hover { border-color: rgba(255,255,255,0.18); }
 .menu-icon { display: grid; place-items: center; font-size: 24px; width: 44px; height: 44px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; }
 .main-pane { display: grid; gap: 12px; border-left: 1px solid var(--border); padding: 16px; }
-.composer textarea { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; }
-.composer select { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; }
+.composer textarea { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 12px 14px; }
+.composer textarea.narrow { max-width: 720px; }
+.composer select { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 12px 14px; }
+.composer input[type="file"] { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; }
+.composer .grid { gap: 16px; margin-bottom: 14px; }
+.composer label { margin-bottom: 12px; }
 .posts-list { display: grid; gap: 10px; }
 .post-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
 .post-header { display: flex; align-items: center; gap: 8px; }

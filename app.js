@@ -76,6 +76,7 @@
   const navSettings = document.getElementById('nav-settings');
   const composer = document.getElementById('composer');
   const postText = document.getElementById('post-text');
+  const postVideo = document.getElementById('post-video');
   const btnPost = document.getElementById('btn-post');
   const postsList = document.getElementById('posts-list');
   const servicesView = document.getElementById('services-view');
@@ -320,6 +321,7 @@
       text,
       category: postCategory ? postCategory.value : '',
       subcategory: postSubcategory ? postSubcategory.value : '',
+      videoName: (postVideo && postVideo.files && postVideo.files[0]) ? postVideo.files[0].name : '',
       author: { name: authState.name, photoUrl: authState.photoUrl },
       createdAt: Date.now()
     };
@@ -346,6 +348,7 @@
         </div>
         <div class="post-text">${escapeHtml(p.text)}</div>
         ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
+        ${p.videoName ? `<div class="post-meta">Attached video: ${escapeHtml(p.videoName)}</div>` : ''}
       `;
       frag.appendChild(el);
     });
