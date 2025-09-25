@@ -80,6 +80,7 @@
   const btnPost = document.getElementById('btn-post');
   const postsList = document.getElementById('posts-list');
   const servicesView = document.getElementById('services-view');
+  const settingsView = document.getElementById('settings-view');
   const postCategory = document.getElementById('post-category');
   const postSubcategory = document.getElementById('post-subcategory');
 
@@ -390,12 +391,15 @@
     // default hidden
     if (composer) composer.classList.add('hidden');
     if (servicesView) servicesView.classList.add('hidden');
+    if (settingsView) settingsView.classList.add('hidden');
     if (postsList) postsList.classList.add('hidden');
 
     if (section === 'create') {
       if (composer) composer.classList.remove('hidden');
     } else if (section === 'services') {
       if (servicesView) servicesView.classList.remove('hidden');
+    } else if (section === 'settings') {
+      if (settingsView) settingsView.classList.remove('hidden');
     } else {
       if (postsList) postsList.classList.remove('hidden');
     }

@@ -65,6 +65,8 @@ html, body {
 .composer .grid { gap: 6px; margin-bottom: 14px; grid-template-columns: 1fr; }
 .composer label { margin-bottom: 12px; }
 .posts-list { display: grid; gap: 10px; }
+.settings-view { display: grid; gap: 10px; }
+.radio { display: inline-flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); padding: 8px 10px; border-radius: 10px; }
 .post-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
 .post-header { display: flex; align-items: center; gap: 8px; }
 .post-meta { color: var(--muted); font-size: 12px; }
