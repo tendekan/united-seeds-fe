@@ -47,9 +47,9 @@ html, body {
 .hidden { display: none !important; }
 /* App shell */
 .app-shell { display: grid; grid-template-columns: 300px 1fr; gap: 0; min-height: calc(100vh - 68px); }
-.sidebar { background: var(--card); border-right: 1px solid var(--border); padding: 16px; padding-left: 0; height: 100%; }
+.sidebar { background: var(--card); border-right: 1px solid var(--border); padding: 16px; padding-left: 12px; height: 100%; overflow: auto; }
 .menu { display: grid; gap: 6px; }
-.menu-item { display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 10px; cursor: pointer; text-align: left; }
+.menu-item { display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 8px; cursor: pointer; text-align: left; font-size: 14px; }
 .menu-item:hover { border-color: rgba(255,255,255,0.18); }
 .main-pane { display: grid; gap: 12px; border-left: 1px solid var(--border); padding: 16px; }
 .composer textarea { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; }
