@@ -88,6 +88,40 @@ html, body {
 .category-tile[data-category="long-stays"] { background: rgba(236,72,153,0.18); border-color: rgba(236,72,153,0.5); color: #ffeaf6; }
 .category-tile[data-category="long-stays"]:hover { background: rgba(236,72,153,0.28); border-color: rgba(236,72,153,0.85); }
 
+/* Additional category accents */
+.category-tile[data-category="building"] { background: rgba(249,115,22,0.18); border-color: rgba(249,115,22,0.5); color: #fff3e9; }
+.category-tile[data-category="building"]:hover { background: rgba(249,115,22,0.28); border-color: rgba(249,115,22,0.85); }
+
+.category-tile[data-category="finance"] { background: rgba(45,212,191,0.18); border-color: rgba(45,212,191,0.5); color: #e6fffb; }
+.category-tile[data-category="finance"]:hover { background: rgba(45,212,191,0.28); border-color: rgba(45,212,191,0.85); }
+
+.category-tile[data-category="it-lessons"] { background: rgba(139,92,246,0.18); border-color: rgba(139,92,246,0.5); color: #f2eaff; }
+.category-tile[data-category="it-lessons"]:hover { background: rgba(139,92,246,0.28); border-color: rgba(139,92,246,0.85); }
+
+.category-tile[data-category="car-repairs"] { background: rgba(248,113,113,0.18); border-color: rgba(248,113,113,0.5); color: #ffeeee; }
+.category-tile[data-category="car-repairs"]:hover { background: rgba(248,113,113,0.28); border-color: rgba(248,113,113,0.85); }
+
+.category-tile[data-category="sport"] { background: rgba(132,204,22,0.18); border-color: rgba(132,204,22,0.5); color: #f4ffe6; }
+.category-tile[data-category="sport"]:hover { background: rgba(132,204,22,0.28); border-color: rgba(132,204,22,0.85); }
+
+.category-tile[data-category="pets"] { background: rgba(250,164,180,0.18); border-color: rgba(250,164,180,0.5); color: #fff0f4; }
+.category-tile[data-category="pets"]:hover { background: rgba(250,164,180,0.28); border-color: rgba(250,164,180,0.85); }
+
+.category-tile[data-category="art"] { background: rgba(217,119,6,0.18); border-color: rgba(217,119,6,0.5); color: #fff5e6; }
+.category-tile[data-category="art"]:hover { background: rgba(217,119,6,0.28); border-color: rgba(217,119,6,0.85); }
+
+.category-tile[data-category="beauty"] { background: rgba(236,72,153,0.18); border-color: rgba(236,72,153,0.5); color: #ffeaf6; }
+.category-tile[data-category="beauty"]:hover { background: rgba(236,72,153,0.28); border-color: rgba(236,72,153,0.85); }
+
+.category-tile[data-category="healthcare"] { background: rgba(56,189,248,0.18); border-color: rgba(56,189,248,0.5); color: #eaf7ff; }
+.category-tile[data-category="healthcare"]:hover { background: rgba(56,189,248,0.28); border-color: rgba(56,189,248,0.85); }
+
+.category-tile[data-category="fashion"] { background: rgba(217,70,239,0.18); border-color: rgba(217,70,239,0.5); color: #feeaff; }
+.category-tile[data-category="fashion"]:hover { background: rgba(217,70,239,0.28); border-color: rgba(217,70,239,0.85); }
+
+.category-tile[data-category="cooking"] { background: rgba(251,146,60,0.18); border-color: rgba(251,146,60,0.5); color: #fff3e9; }
+.category-tile[data-category="cooking"]:hover { background: rgba(251,146,60,0.28); border-color: rgba(251,146,60,0.85); }
+
 @media (max-width: 960px) {
   .app-shell { grid-template-columns: 1fr; min-height: auto; }
   .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
