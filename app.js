@@ -79,6 +79,8 @@
   const btnPost = document.getElementById('btn-post');
   const postsList = document.getElementById('posts-list');
   const servicesView = document.getElementById('services-view');
+  const postCategory = document.getElementById('post-category');
+  const postSubcategory = document.getElementById('post-subcategory');
 
   // ---------- Initialization ----------
   function init() {
@@ -192,6 +194,72 @@
     if (navDating) navDating.addEventListener('click', () => showSection('dating'));
     if (navSettings) navSettings.addEventListener('click', () => showSection('settings'));
     if (btnPost) btnPost.addEventListener('click', onCreatePost);
+    setupCategories();
+    setupServiceTileRouting();
+  }
+
+  const CATEGORY_LABELS = [
+    ['gardening', 'Gardening'],
+    ['home-repairs', 'Home Repairs'],
+    ['short-stays', 'Short-term stays'],
+    ['long-stays', 'Long-term stays'],
+    ['building', 'Building'],
+    ['finance', 'Finance'],
+    ['it-lessons', 'IT Lessons'],
+    ['car-repairs', 'Car Repairs'],
+    ['sport', 'Sport'],
+    ['pets', 'Pets'],
+    ['art', 'Art'],
+    ['beauty', 'Beauty'],
+    ['healthcare', 'Healthcare'],
+    ['fashion', 'Fashion'],
+    ['cooking', 'Cooking']
+  ];
+
+  const SUBCATEGORY_MAP = {
+    'gardening': ['Plants', 'Landscaping', 'Tools'],
+    'home-repairs': ['Plumbing', 'Electrical', 'Painting'],
+    'short-stays': ['Room', 'Studio', 'Apartment'],
+    'long-stays': ['Room', 'House', 'Apartment'],
+    'building': ['Renovation', 'Construction', 'Consulting'],
+    'finance': ['Budgeting', 'Taxes', 'Investing'],
+    'it-lessons': ['Programming', 'Office Tools', 'Cybersecurity'],
+    'car-repairs': ['Engine', 'Tires', 'Diagnostics'],
+    'sport': ['Fitness', 'Team Sports', 'Coaching'],
+    'pets': ['Grooming', 'Training', 'Sitting'],
+    'art': ['Painting', 'Drawing', 'Crafts'],
+    'beauty': ['Makeup', 'Skincare', 'Hair'],
+    'healthcare': ['Wellness', 'First Aid', 'Nutrition'],
+    'fashion': ['Styling', 'Tailoring', 'Design'],
+    'cooking': ['Baking', 'Meal Prep', 'World Cuisine']
+  };
+
+  function setupCategories() {
+    if (!postCategory || !postSubcategory) return;
+    postCategory.innerHTML = CATEGORY_LABELS.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+    postCategory.addEventListener('change', () => populateSubcategories(postCategory.value));
+    populateSubcategories(CATEGORY_LABELS[0][0]);
+  }
+
+  function populateSubcategories(categoryKey) {
+    if (!postSubcategory) return;
+    const subs = SUBCATEGORY_MAP[categoryKey] || [];
+    postSubcategory.innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join('');
+  }
+
+  function setupServiceTileRouting() {
+    if (!servicesView) return;
+    servicesView.addEventListener('click', (e) => {
+      const tile = e.target.closest('.category-tile');
+      if (!tile) return;
+      const cat = tile.getAttribute('data-category');
+      if (postCategory) {
+        postCategory.value = cat;
+        populateSubcategories(cat);
+      }
+      showSection('posts');
+      filterByCategory(cat);
+    });
   }
 
   function openAuthModal(mode) {
@@ -250,6 +318,8 @@
     const post = {
       id: generateId('post'),
       text,
+      category: postCategory ? postCategory.value : '',
+      subcategory: postSubcategory ? postSubcategory.value : '',
       author: { name: authState.name, photoUrl: authState.photoUrl },
       createdAt: Date.now()
     };
@@ -275,6 +345,38 @@
           </div>
         </div>
         <div class="post-text">${escapeHtml(p.text)}</div>
+        ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
+      `;
+      frag.appendChild(el);
+    });
+    postsList.appendChild(frag);
+  }
+
+  function filterByCategory(categoryKey) {
+    // Show posts section
+    if (composer) composer.classList.add('hidden');
+    if (servicesView) servicesView.classList.add('hidden');
+    if (postsList) postsList.classList.remove('hidden');
+    // Simple filter: reorder posts so matching category appear first
+    const [match, rest] = posts.reduce((acc, p) => {
+      (p.category === categoryKey ? acc[0] : acc[1]).push(p);
+      return acc;
+    }, [[], []]);
+    postsList.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    [...match, ...rest].forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'post-card';
+      el.innerHTML = `
+        <div class="post-header">
+          <img class="avatar" src="${p.author.photoUrl || getAvatarPlaceholder(p.author.name)}" alt="${p.author.name}">
+          <div>
+            <div class="owner-name">${escapeHtml(p.author.name)}</div>
+            <div class="post-meta">${new Date(p.createdAt).toLocaleString()}</div>
+          </div>
+        </div>
+        <div class="post-text">${escapeHtml(p.text)}</div>
+        ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
       `;
       frag.appendChild(el);
     });
