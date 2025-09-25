@@ -45,6 +45,23 @@ html, body {
 .features { margin: 8px 0 0; padding-left: 18px; }
 .muted { color: var(--muted); }
 .hidden { display: none !important; }
+/* App shell */
+.app-shell { display: grid; grid-template-columns: 250px 1fr; gap: 16px; min-height: 360px; }
+.sidebar { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; position: sticky; top: 74px; height: fit-content; }
+.menu { display: grid; gap: 6px; }
+.menu-item { display: flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 10px; cursor: pointer; text-align: left; }
+.menu-item:hover { border-color: rgba(255,255,255,0.18); }
+.main-pane { display: grid; gap: 12px; }
+.composer textarea { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; }
+.posts-list { display: grid; gap: 10px; }
+.post-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+.post-header { display: flex; align-items: center; gap: 8px; }
+.post-meta { color: var(--muted); font-size: 12px; }
+
+@media (max-width: 960px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+}
 .feature-tiles { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-top: 16px; }
 .feature-tile { position: relative; display: grid; grid-template-rows: auto 1fr auto; grid-template-columns: 1fr; gap: 12px; align-items: start; background: var(--card); border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; padding: 18px; min-height: 260px; aspect-ratio: 1 / 1; overflow: hidden; transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
 .feature-tile::before { content: ""; position: absolute; inset: -40% -40% auto auto; height: 110px; width: 110px; background: radial-gradient(40% 40% at 50% 50%, rgba(157,255,183,.18), transparent 70%); transform: rotate(18deg); pointer-events: none; }

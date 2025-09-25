@@ -51,6 +51,7 @@
   const profileEmail = document.getElementById('profile-email');
 
   const landing = document.getElementById('landing');
+  const appShell = document.getElementById('app-shell');
   const createSkill = document.getElementById('create-skill');
   const skillForm = document.getElementById('skill-form');
   const skillTitle = document.getElementById('skill-title');
@@ -69,6 +70,14 @@
   const btnTileShare = document.getElementById('btn-tile-share');
   const btnTileLearn = document.getElementById('btn-tile-learn');
   const btnTileTip = document.getElementById('btn-tile-tip');
+  const navCreate = document.getElementById('nav-create');
+  const navServices = document.getElementById('nav-services');
+  const navDating = document.getElementById('nav-dating');
+  const navSettings = document.getElementById('nav-settings');
+  const composer = document.getElementById('composer');
+  const postText = document.getElementById('post-text');
+  const btnPost = document.getElementById('btn-post');
+  const postsList = document.getElementById('posts-list');
 
   // ---------- Initialization ----------
   function init() {
@@ -177,6 +186,11 @@
     if (btnTileTip) btnTileTip.addEventListener('click', () => {
       document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
     });
+    if (navCreate) navCreate.addEventListener('click', () => showSection('create'));
+    if (navServices) navServices.addEventListener('click', () => showSection('services'));
+    if (navDating) navDating.addEventListener('click', () => showSection('dating'));
+    if (navSettings) navSettings.addEventListener('click', () => showSection('settings'));
+    if (btnPost) btnPost.addEventListener('click', onCreatePost);
   }
 
   function openAuthModal(mode) {
@@ -197,18 +211,71 @@
       authOutEl.classList.add('hidden');
       authInEl.classList.remove('hidden');
       landing.classList.add('hidden');
+      appShell.classList.remove('hidden');
       createSkill.classList.remove('hidden');
       profilePic.src = authState.photoUrl || '';
       profileName.textContent = authState.name || '';
       profileEmail.textContent = authState.email || '';
+      renderPosts();
     } else {
       authOutEl.classList.remove('hidden');
       authInEl.classList.add('hidden');
       landing.classList.remove('hidden');
+      appShell.classList.add('hidden');
       createSkill.classList.add('hidden');
       profilePic.src = '';
       profileName.textContent = '';
       profileEmail.textContent = '';
+    }
+  }
+
+  // ---------- Posts ----------
+  const POSTS_KEY = 'unitedseeds.posts';
+  let posts = loadFromStorage(POSTS_KEY, []);
+
+  function onCreatePost() {
+    if (!authState) { openAuthModal('Sign in'); return; }
+    const text = (postText.value || '').trim();
+    if (!text) return;
+    const post = {
+      id: generateId('post'),
+      text,
+      author: { name: authState.name, photoUrl: authState.photoUrl },
+      createdAt: Date.now()
+    };
+    posts.unshift(post);
+    saveToStorage(POSTS_KEY, posts);
+    postText.value = '';
+    renderPosts();
+  }
+
+  function renderPosts() {
+    if (!postsList) return;
+    postsList.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    posts.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'post-card';
+      el.innerHTML = `
+        <div class="post-header">
+          <img class="avatar" src="${p.author.photoUrl || getAvatarPlaceholder(p.author.name)}" alt="${p.author.name}">
+          <div>
+            <div class="owner-name">${escapeHtml(p.author.name)}</div>
+            <div class="post-meta">${new Date(p.createdAt).toLocaleString()}</div>
+          </div>
+        </div>
+        <div class="post-text">${escapeHtml(p.text)}</div>
+      `;
+      frag.appendChild(el);
+    });
+    postsList.appendChild(frag);
+  }
+
+  function showSection(section) {
+    if (section === 'create') {
+      composer.classList.remove('hidden');
+    } else {
+      composer.classList.add('hidden');
     }
   }
 

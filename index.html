@@ -154,6 +154,29 @@
             <p class="muted">Sign in to start posting skills and tipping creators.</p>
         </section>
 
+        <!-- App shell shown after login -->
+        <section id="app-shell" class="card hidden">
+            <div class="app-shell">
+                <aside class="sidebar">
+                    <nav class="menu">
+                        <button id="nav-create" class="menu-item" title="Create Post">✍️ <span>Create Post</span></button>
+                        <button id="nav-services" class="menu-item" title="Services">🧩 <span>Services</span></button>
+                        <button id="nav-dating" class="menu-item" title="Dating">💞 <span>Dating</span></button>
+                        <button id="nav-settings" class="menu-item" title="Settings">⚙️ <span>Settings</span></button>
+                    </nav>
+                </aside>
+                <section class="main-pane">
+                    <div id="composer" class="composer hidden">
+                        <textarea id="post-text" rows="3" placeholder="Share something with the community..."></textarea>
+                        <div class="actions">
+                            <button id="btn-post" class="btn">Post</button>
+                        </div>
+                    </div>
+                    <div id="posts-list" class="posts-list"></div>
+                </section>
+            </div>
+        </section>
+
         <section id="create-skill" class="card hidden">
             <h2>Share a Skill</h2>
             <form id="skill-form" autocomplete="off">
