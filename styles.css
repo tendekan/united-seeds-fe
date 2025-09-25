@@ -61,18 +61,18 @@ html, body {
 
 /* Services view */
 .services-view { display: grid; }
-.category-tiles { display: grid; grid-template-columns: repeat(5, 100px); gap: 10px; justify-content: start; }
+.category-tiles { display: grid; grid-template-columns: repeat(5, 100px); gap: 4px; justify-content: start; }
 .category-tile { display: grid; place-items: center; gap: 6px; background: rgba(157,255,183,0.15); color: #eafff0; border: 1px solid rgba(157,255,183,0.45); border-radius: 10px; width: 100px; height: 100px; padding: 8px; cursor: pointer; }
 .category-tile:hover { border-color: rgba(157,255,183,0.9); box-shadow: 0 10px 28px rgba(0,0,0,.28); transform: translateY(-1px); }
 .ct-icon { font-size: 36px; line-height: 1; }
 .ct-title { display: block; font-weight: 800; font-size: 12px; letter-spacing: .2px; text-align: center; }
 
 @media (max-width: 900px) {
-  .category-tiles { grid-template-columns: repeat(3, 100px); }
+  .category-tiles { grid-template-columns: repeat(3, 100px); gap: 4px; }
 }
 
 @media (max-width: 480px) {
-  .category-tiles { grid-template-columns: repeat(2, 100px); }
+  .category-tiles { grid-template-columns: repeat(2, 100px); gap: 4px; }
 }
 
 /* Category-specific colors */
