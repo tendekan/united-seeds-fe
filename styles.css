@@ -48,9 +48,7 @@ html, body {
 /* App shell */
 .app-shell { display: grid; grid-template-columns: 300px 1fr; gap: 0; min-height: calc(100vh - 68px); }
 .sidebar { background: var(--card); border-right: 1px solid var(--border); padding: 16px; padding-left: 12px; height: 100%; overflow: auto; }
-.menu { display: grid; grid-template-rows: 1fr auto; height: 100%; }
-.menu-top { display: grid; gap: 10px; align-content: start; }
-.menu-bottom { margin-top: auto; }
+.menu { display: grid; gap: 10px; }
 .menu-item { display: grid; grid-template-columns: 44px 1fr; align-items: center; gap: 10px; background: transparent; border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 12px; cursor: pointer; text-align: left; font-size: 15px; min-height: 56px; }
 .menu-item:hover { border-color: rgba(255,255,255,0.18); }
 .menu-icon { display: grid; place-items: center; font-size: 24px; width: 44px; height: 44px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; }
@@ -63,11 +61,15 @@ html, body {
 
 /* Services view */
 .services-view { display: grid; }
-.category-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.category-tile { display: grid; justify-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; cursor: pointer; }
-.category-tile:hover { border-color: rgba(255,255,255,0.2); box-shadow: 0 16px 40px rgba(0,0,0,.35); transform: translateY(-2px); }
-.ct-icon { font-size: 28px; }
-.ct-title { font-weight: 700; }
+.category-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.category-tile { display: grid; justify-items: center; gap: 6px; background: rgba(157,255,183,0.15); color: #eafff0; border: 1px solid rgba(157,255,183,0.45); border-radius: 10px; padding: 10px; cursor: pointer; }
+.category-tile:hover { border-color: rgba(157,255,183,0.7); box-shadow: 0 10px 30px rgba(0,0,0,.3); transform: translateY(-1px); }
+.ct-icon { font-size: 22px; }
+.ct-title { font-weight: 800; font-size: 13px; letter-spacing: .2px; }
+
+@media (max-width: 900px) {
+  .category-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 @media (max-width: 960px) {
   .app-shell { grid-template-columns: 1fr; min-height: auto; }
