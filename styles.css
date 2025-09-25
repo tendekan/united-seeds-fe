@@ -62,7 +62,7 @@ html, body {
 .composer input[type="file"].compact::-webkit-file-upload-button { padding: 2px 6px; font-size: 12px; border-radius: 6px; }
 .composer input[type="file"].compact::file-selector-button { padding: 2px 6px; font-size: 12px; border-radius: 6px; }
 .composer label > span { font-size: 12px; }
-.composer .grid { gap: 6px; margin-bottom: 14px; }
+.composer .grid { gap: 6px; margin-bottom: 14px; grid-template-columns: 1fr; }
 .composer label { margin-bottom: 12px; }
 .posts-list { display: grid; gap: 10px; }
 .post-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }

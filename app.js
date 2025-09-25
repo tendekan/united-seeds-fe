@@ -62,7 +62,7 @@
   const searchInput = null; // search removed
   const authModal = document.getElementById('auth-modal');
   const authModalClose = document.getElementById('auth-modal-close');
-  const googleCalendarLogin = document.getElementById('google-calendar-login');
+  const googleCalendarLogin = null; // removed
   const btnModalFacebook = document.getElementById('btn-modal-facebook');
   const authModalTitle = document.getElementById('auth-modal-title');
   const heroCta = document.getElementById('btn-hero-cta');
@@ -159,7 +159,7 @@
   function attachEvents() {
     if (btnOpenSignin) btnOpenSignin.addEventListener('click', () => openAuthModal('Sign in'));
     if (btnOpenSignup) btnOpenSignup.addEventListener('click', () => openAuthModal('Sign up'));
-    if (googleCalendarLogin) setupGoogleOAuthLink();
+    // google login removed
     if (btnModalFacebook) btnModalFacebook.addEventListener('click', onFacebookSignInClick);
     if (authModalClose) authModalClose.addEventListener('click', closeAuthModal);
     if (authModal) authModal.addEventListener('click', (e) => {
@@ -522,23 +522,7 @@
     googleInited = true;
   }
 
-  function setupGoogleOAuthLink() {
-    // Prefer explicit config if provided
-    const clientId = '118701076488-ftubu48jfl4tvk7dg6op1cs25kl7fl7i.apps.googleusercontent.com';
-    const redirectUri = 'https://75e90f62a011.ngrok-free.app/oauth2callback';
-    const scope = 'https://www.googleapis.com/auth/user.birthday.read https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
-    const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
-    if (!googleCalendarLogin) return;
-    const params = new URLSearchParams({
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: 'code',
-      scope: scope,
-      access_type: 'offline',
-      prompt: 'consent'
-    }).toString();
-    googleCalendarLogin.href = `${oauth2Endpoint}?${params}`;
-  }
+// google oauth link removed
 
   async function fetchGoogleUser(accessToken) {
     const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
