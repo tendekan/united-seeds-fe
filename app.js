@@ -469,6 +469,7 @@
     if (datingView) datingView.classList.add('hidden');
     if (settingsView) settingsView.classList.add('hidden');
     if (postsList) postsList.classList.add('hidden');
+    if (postsPagination) postsPagination.classList.add('hidden');
 
     if (section === 'create') {
       if (composer) composer.classList.remove('hidden');
@@ -481,7 +482,11 @@
       if (settingsView) settingsView.classList.remove('hidden');
     } else {
       if (postsList) postsList.classList.remove('hidden');
-      if (currentRemoteCategory) fetchAndRenderRemotePosts();
+      if (currentRemoteCategory) {
+        fetchAndRenderRemotePosts();
+      } else {
+        if (postsPagination) postsPagination.classList.add('hidden');
+      }
     }
   }
 
@@ -551,6 +556,11 @@
 
   function updatePostsPagination(returnedCount) {
     if (!postsPagination || !postsPrev || !postsNext || !postsPage) return;
+    // Show only when a remote category is selected from Services
+    if (!currentRemoteCategory) {
+      postsPagination.classList.add('hidden');
+      return;
+    }
     postsPagination.classList.remove('hidden');
     postsPage.textContent = `Page ${currentRemotePage}`;
     postsPrev.disabled = currentRemotePage <= 1;
