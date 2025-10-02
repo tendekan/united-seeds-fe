@@ -341,7 +341,7 @@
   const POSTS_KEY = 'unitedseeds.posts';
   let posts = loadFromStorage(POSTS_KEY, []);
 
-  function onCreatePost() {
+  async function onCreatePost() {
     if (!authState) { openAuthModal('Sign in'); return; }
     const text = (postText.value || '').trim();
     if (!text) return;
@@ -358,6 +358,36 @@
     saveToStorage(POSTS_KEY, posts);
     postText.value = '';
     renderPosts();
+
+    // Additionally send to external API as per requirement
+    try {
+      const apiBase = 'https://united-seeds-118701076488.europe-central2.run.app/posts';
+      // Map internal values to API contract
+      const categoryKeyToLabel = new Map(CATEGORY_LABELS);
+      const categoryLabel = categoryKeyToLabel.get(post.category) || post.category || '';
+      const payload = {
+        id: Math.floor(Date.now() / 1000),
+        userId: authState.userId || Math.floor(Math.random() * 1000000),
+        category: categoryLabel || '',
+        subcategory: post.subcategory || '',
+        videoUrl: post.videoName ? post.videoName : '',
+        postText: text,
+        createdAt: new Date().toISOString()
+      };
+      await fetch(`${apiBase}/${payload.id}`, {
+        method: 'PUT',
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      // Optional UX: notify success without blocking UI
+      console.info('Post sent to API', payload);
+    } catch (err) {
+      console.error('Failed to send post to API', err);
+      // Keep local success even if network fails
+    }
   }
 
   function renderPosts() {
