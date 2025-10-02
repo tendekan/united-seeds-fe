@@ -95,6 +95,7 @@
   const settingsCurrency = document.getElementById('settings-currency');
   const postCategory = document.getElementById('post-category');
   const postSubcategory = document.getElementById('post-subcategory');
+  const toast = document.getElementById('toast');
 
   // ---------- Initialization ----------
   function init() {
@@ -391,7 +392,7 @@
         postText: text,
         createdAt: new Date().toISOString()
       };
-      await fetch(`${apiBase}`, {
+      const resp = await fetch(`${apiBase}`, {
         method: 'POST',
         headers: {
           'accept': '*/*',
@@ -399,12 +400,25 @@
         },
         body: JSON.stringify(payload)
       });
+      if (resp.ok) {
+        showToast('Your post has been submitted successfully.');
+      }
       // Optional UX: notify success without blocking UI
       console.info('Post sent to API', payload);
     } catch (err) {
       console.error('Failed to send post to API', err);
       // Keep local success even if network fails
     }
+  }
+
+  function showToast(message) {
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.remove('hidden');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 2500);
   }
 
   function renderPosts() {
@@ -523,8 +537,9 @@
     postsList.innerHTML = '<div class="muted">Loading…</div>';
     try {
       const data = await fetchServicePosts(currentRemoteCategory, currentRemotePage);
-      renderRemotePosts(Array.isArray(data) ? data : []);
-      updatePostsPagination(Array.isArray(data) ? data.length : 0);
+      const arr = Array.isArray(data) ? data : [];
+      renderRemotePosts(arr);
+      updatePostsPagination(arr.length);
     } catch (e) {
       console.error(e);
       postsList.innerHTML = '<div class="muted">Failed to load posts.</div>';
@@ -565,7 +580,12 @@
       postsPagination.classList.add('hidden');
       return;
     }
-    postsPagination.classList.remove('hidden');
+    if (returnedCount === 0) {
+      postsPagination.classList.add('hidden');
+      return;
+    } else {
+      postsPagination.classList.remove('hidden');
+    }
     postsPage.textContent = `Page ${currentRemotePage}`;
     postsPrev.disabled = currentRemotePage <= 1;
     postsNext.disabled = returnedCount < pageSize;
