@@ -365,9 +365,14 @@
       // Map internal values to API contract
       const categoryKeyToLabel = new Map(CATEGORY_LABELS);
       const categoryLabel = categoryKeyToLabel.get(post.category) || post.category || '';
+      const twoDigit = (n) => {
+        const num = Number(n);
+        if (!Number.isFinite(num)) return Math.floor(Math.random() * 100);
+        return Math.abs(num) % 100; // 0..99
+      };
       const payload = {
-        id: Math.floor(Date.now() / 1000),
-        userId: authState.userId || Math.floor(Math.random() * 1000000),
+        id: twoDigit(Math.floor(Date.now() / 1000)),
+        userId: twoDigit(authState.userId ?? Math.floor(Math.random() * 1000000)),
         category: categoryLabel || '',
         subcategory: post.subcategory || '',
         videoUrl: post.videoName ? post.videoName : '',
