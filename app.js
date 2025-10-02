@@ -80,6 +80,11 @@
   const btnPost = document.getElementById('btn-post');
   const postsList = document.getElementById('posts-list');
   const servicesView = document.getElementById('services-view');
+  const datingView = document.getElementById('dating-view');
+  const servicesPosts = document.getElementById('services-posts');
+  const svcPrev = document.getElementById('svc-prev');
+  const svcNext = document.getElementById('svc-next');
+  const svcPage = document.getElementById('svc-page');
   const settingsView = document.getElementById('settings-view');
   const chkUseProfileDating = document.getElementById('opt-use-profile-dating');
   const settingsLanguage = document.getElementById('settings-language');
@@ -289,6 +294,10 @@
       }
       showSection('posts');
       filterByCategory(cat);
+      // Also fetch remote posts for Services view
+      currentServiceCategory = cat;
+      currentServicePage = 1;
+      fetchAndRenderServicePosts();
     });
   }
 
@@ -454,6 +463,7 @@
     // default hidden
     if (composer) composer.classList.add('hidden');
     if (servicesView) servicesView.classList.add('hidden');
+    if (datingView) datingView.classList.add('hidden');
     if (settingsView) settingsView.classList.add('hidden');
     if (postsList) postsList.classList.add('hidden');
 
@@ -461,11 +471,105 @@
       if (composer) composer.classList.remove('hidden');
     } else if (section === 'services') {
       if (servicesView) servicesView.classList.remove('hidden');
+      if (!currentServiceCategory && postCategory) {
+        currentServiceCategory = postCategory.value;
+      }
+      if (currentServiceCategory) fetchAndRenderServicePosts();
+    } else if (section === 'dating') {
+      if (datingView) datingView.classList.remove('hidden');
     } else if (section === 'settings') {
       if (settingsView) settingsView.classList.remove('hidden');
     } else {
       if (postsList) postsList.classList.remove('hidden');
     }
+  }
+
+  // ---------- Services: Remote Posts with Pagination ----------
+  let currentServiceCategory = '';
+  let currentServicePage = 1;
+  const pageSize = 10;
+
+  function getCategoryLabelFromKey(key) {
+    const map = new Map(CATEGORY_LABELS);
+    return map.get(key) || key;
+  }
+
+  function getApiCategoryParam(key) {
+    // The API expects capitalized labels like "Finance"
+    const label = getCategoryLabelFromKey(key);
+    return label;
+  }
+
+  async function fetchServicePosts(categoryKey, page) {
+    const apiCat = getApiCategoryParam(categoryKey);
+    const url = `https://united-seeds-118701076488.europe-central2.run.app/posts/category/${encodeURIComponent(apiCat)}?page=${page}&size=${pageSize}`;
+    const resp = await fetch(url, { headers: { 'accept': '*/*' } });
+    if (!resp.ok) throw new Error('Failed to fetch service posts');
+    return resp.json();
+  }
+
+  async function fetchAndRenderServicePosts() {
+    if (!servicesPosts || !currentServiceCategory) return;
+    servicesPosts.innerHTML = '<div class="muted">Loading…</div>';
+    try {
+      const data = await fetchServicePosts(currentServiceCategory, currentServicePage);
+      renderServicePosts(Array.isArray(data) ? data : []);
+      updatePaginationControls(Array.isArray(data) ? data.length : 0);
+    } catch (e) {
+      console.error(e);
+      servicesPosts.innerHTML = '<div class="muted">Failed to load posts.</div>';
+    }
+  }
+
+  function renderServicePosts(items) {
+    servicesPosts.innerHTML = '';
+    if (!items.length) {
+      servicesPosts.innerHTML = '<div class="muted">No posts in this category.</div>';
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    items.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'post-card';
+      el.innerHTML = `
+        <div class="post-header">
+          <div>
+            <div class="owner-name">User ${escapeHtml(String(p.userId ?? ''))}</div>
+            <div class="post-meta">${escapeHtml(String(p.category || ''))} ${p.subcategory ? '• ' + escapeHtml(String(p.subcategory)) : ''}</div>
+          </div>
+        </div>
+        <div class="post-text">${escapeHtml(String(p.postText || ''))}</div>
+        ${p.videoUrl ? `<div class="post-meta">Video: <a href="${escapeHtml(String(p.videoUrl))}" target="_blank" rel="noopener noreferrer">${escapeHtml(String(p.videoUrl))}</a></div>` : ''}
+        <div class="post-meta">${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</div>
+      `;
+      frag.appendChild(el);
+    });
+    servicesPosts.appendChild(frag);
+  }
+
+  function updatePaginationControls(returnedCount) {
+    if (!svcPrev || !svcNext || !svcPage) return;
+    svcPage.textContent = `Page ${currentServicePage}`;
+    // Disable prev on first page
+    svcPrev.disabled = currentServicePage <= 1;
+    // Heuristic: if returned less than pageSize, disable next
+    svcNext.disabled = returnedCount < pageSize;
+  }
+
+  if (svcPrev) {
+    svcPrev.addEventListener('click', () => {
+      if (currentServicePage > 1) {
+        currentServicePage -= 1;
+        fetchAndRenderServicePosts();
+      }
+    });
+  }
+
+  if (svcNext) {
+    svcNext.addEventListener('click', () => {
+      currentServicePage += 1;
+      fetchAndRenderServicePosts();
+    });
   }
 
   function signOut() {
