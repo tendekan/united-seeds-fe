@@ -792,7 +792,7 @@
       } else {
         console.warn('User cancelled FB login or did not fully authorize.');
       }
-    }, { scope: 'public_profile,email,user_birthday,user_friends,user_gender' });
+    }, { scope: 'public_profile' });
     closeAuthModal();
   }
 
