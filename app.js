@@ -375,7 +375,7 @@
         userId: twoDigit(authState.userId ?? Math.floor(Math.random() * 1000000)),
         category: categoryLabel || '',
         subcategory: post.subcategory || '',
-        videoUrl: post.videoName ? post.videoName : '',
+        videoUrl: post.videoName ? post.videoName : 'https://example.com/video.mp4',
         postText: text,
         createdAt: new Date().toISOString()
       };
