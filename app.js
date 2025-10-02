@@ -85,10 +85,10 @@
   const postsPage = document.getElementById('posts-page');
   const servicesView = document.getElementById('services-view');
   const datingView = document.getElementById('dating-view');
-  const servicesPosts = document.getElementById('services-posts');
-  const svcPrev = document.getElementById('svc-prev');
-  const svcNext = document.getElementById('svc-next');
-  const svcPage = document.getElementById('svc-page');
+  const servicesPosts = null;
+  const svcPrev = null;
+  const svcNext = null;
+  const svcPage = null;
   const settingsView = document.getElementById('settings-view');
   const chkUseProfileDating = document.getElementById('opt-use-profile-dating');
   const settingsLanguage = document.getElementById('settings-language');
@@ -476,6 +476,10 @@
     } else if (section === 'services') {
       if (servicesView) servicesView.classList.remove('hidden');
       // Do not fetch remote posts here anymore
+      // Reset remote selection and hide posts pagination on services
+      currentRemoteCategory = '';
+      currentRemotePage = 1;
+      if (postsPagination) postsPagination.classList.add('hidden');
     } else if (section === 'dating') {
       if (datingView) datingView.classList.remove('hidden');
     } else if (section === 'settings') {
@@ -582,6 +586,9 @@
       fetchAndRenderRemotePosts();
     });
   }
+
+  // Ensure pagination hidden by default until a category is chosen
+  if (postsPagination) postsPagination.classList.add('hidden');
 
   function signOut() {
     authState = null;
