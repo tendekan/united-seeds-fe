@@ -379,8 +379,8 @@
         postText: text,
         createdAt: new Date().toISOString()
       };
-      await fetch(`${apiBase}/${payload.id}`, {
-        method: 'PUT',
+      await fetch(`${apiBase}`, {
+        method: 'POST',
         headers: {
           'accept': '*/*',
           'Content-Type': 'application/json'
