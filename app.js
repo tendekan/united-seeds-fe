@@ -79,6 +79,10 @@
   const postVideo = document.getElementById('post-video');
   const btnPost = document.getElementById('btn-post');
   const postsList = document.getElementById('posts-list');
+  const postsPagination = document.getElementById('posts-pagination');
+  const postsPrev = document.getElementById('posts-prev');
+  const postsNext = document.getElementById('posts-next');
+  const postsPage = document.getElementById('posts-page');
   const servicesView = document.getElementById('services-view');
   const datingView = document.getElementById('dating-view');
   const servicesPosts = document.getElementById('services-posts');
@@ -292,12 +296,11 @@
         postCategory.value = cat;
         populateSubcategories(cat);
       }
+      // Navigate to posts and fetch remote posts there
       showSection('posts');
-      filterByCategory(cat);
-      // Also fetch remote posts for Services view
-      currentServiceCategory = cat;
-      currentServicePage = 1;
-      fetchAndRenderServicePosts();
+      currentRemoteCategory = cat;
+      currentRemotePage = 1;
+      fetchAndRenderRemotePosts();
     });
   }
 
@@ -471,22 +474,20 @@
       if (composer) composer.classList.remove('hidden');
     } else if (section === 'services') {
       if (servicesView) servicesView.classList.remove('hidden');
-      if (!currentServiceCategory && postCategory) {
-        currentServiceCategory = postCategory.value;
-      }
-      if (currentServiceCategory) fetchAndRenderServicePosts();
+      // Do not fetch remote posts here anymore
     } else if (section === 'dating') {
       if (datingView) datingView.classList.remove('hidden');
     } else if (section === 'settings') {
       if (settingsView) settingsView.classList.remove('hidden');
     } else {
       if (postsList) postsList.classList.remove('hidden');
+      if (currentRemoteCategory) fetchAndRenderRemotePosts();
     }
   }
 
-  // ---------- Services: Remote Posts with Pagination ----------
-  let currentServiceCategory = '';
-  let currentServicePage = 1;
+  // ---------- Remote Posts (Posts page) with Pagination ----------
+  let currentRemoteCategory = '';
+  let currentRemotePage = 1;
   const pageSize = 10;
 
   function getCategoryLabelFromKey(key) {
@@ -508,23 +509,24 @@
     return resp.json();
   }
 
-  async function fetchAndRenderServicePosts() {
-    if (!servicesPosts || !currentServiceCategory) return;
-    servicesPosts.innerHTML = '<div class="muted">Loading…</div>';
+  async function fetchAndRenderRemotePosts() {
+    if (!postsList || !currentRemoteCategory) return;
+    postsList.innerHTML = '<div class="muted">Loading…</div>';
     try {
-      const data = await fetchServicePosts(currentServiceCategory, currentServicePage);
-      renderServicePosts(Array.isArray(data) ? data : []);
-      updatePaginationControls(Array.isArray(data) ? data.length : 0);
+      const data = await fetchServicePosts(currentRemoteCategory, currentRemotePage);
+      renderRemotePosts(Array.isArray(data) ? data : []);
+      updatePostsPagination(Array.isArray(data) ? data.length : 0);
     } catch (e) {
       console.error(e);
-      servicesPosts.innerHTML = '<div class="muted">Failed to load posts.</div>';
+      postsList.innerHTML = '<div class="muted">Failed to load posts.</div>';
+      updatePostsPagination(0);
     }
   }
 
-  function renderServicePosts(items) {
-    servicesPosts.innerHTML = '';
+  function renderRemotePosts(items) {
+    postsList.innerHTML = '';
     if (!items.length) {
-      servicesPosts.innerHTML = '<div class="muted">No posts in this category.</div>';
+      postsList.innerHTML = '<div class="muted">No posts in this category.</div>';
       return;
     }
     const frag = document.createDocumentFragment();
@@ -544,31 +546,30 @@
       `;
       frag.appendChild(el);
     });
-    servicesPosts.appendChild(frag);
+    postsList.appendChild(frag);
   }
 
-  function updatePaginationControls(returnedCount) {
-    if (!svcPrev || !svcNext || !svcPage) return;
-    svcPage.textContent = `Page ${currentServicePage}`;
-    // Disable prev on first page
-    svcPrev.disabled = currentServicePage <= 1;
-    // Heuristic: if returned less than pageSize, disable next
-    svcNext.disabled = returnedCount < pageSize;
+  function updatePostsPagination(returnedCount) {
+    if (!postsPagination || !postsPrev || !postsNext || !postsPage) return;
+    postsPagination.classList.remove('hidden');
+    postsPage.textContent = `Page ${currentRemotePage}`;
+    postsPrev.disabled = currentRemotePage <= 1;
+    postsNext.disabled = returnedCount < pageSize;
   }
 
-  if (svcPrev) {
-    svcPrev.addEventListener('click', () => {
-      if (currentServicePage > 1) {
-        currentServicePage -= 1;
-        fetchAndRenderServicePosts();
+  if (postsPrev) {
+    postsPrev.addEventListener('click', () => {
+      if (currentRemotePage > 1) {
+        currentRemotePage -= 1;
+        fetchAndRenderRemotePosts();
       }
     });
   }
 
-  if (svcNext) {
-    svcNext.addEventListener('click', () => {
-      currentServicePage += 1;
-      fetchAndRenderServicePosts();
+  if (postsNext) {
+    postsNext.addEventListener('click', () => {
+      currentRemotePage += 1;
+      fetchAndRenderRemotePosts();
     });
   }
 
