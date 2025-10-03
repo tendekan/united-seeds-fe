@@ -647,12 +647,53 @@
           </div>
         </div>
         <div class="post-text">${escapeHtml(String(p.postText || ''))}</div>
-        ${p.videoUrl ? `<div class="post-meta">Video: <a href="${escapeHtml(String(p.videoUrl))}" target="_blank" rel="noopener noreferrer">${escapeHtml(String(p.videoUrl))}</a></div>` : ''}
+        <div class="post-media"></div>
         <div class="post-meta">${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</div>
       `;
+      const fileName = (p.videoUrl || p.videoLink || '').toString().trim();
+      if (fileName) {
+        attachSignedVideoToCard(el.querySelector('.post-media'), fileName).catch(err => {
+          console.error('Failed to attach video', err);
+        });
+      }
       frag.appendChild(el);
     });
     postsList.appendChild(frag);
+  }
+
+  async function requestSignedDownloadUrl(fileName) {
+    const url = 'https://united-seeds-118701076488.europe-central2.run.app/api/v1/videos/download-url';
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'accept': '*/*', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName })
+    });
+    if (!resp.ok) throw new Error('Failed to get signed download URL');
+    return resp.json();
+  }
+
+  async function attachSignedVideoToCard(container, fileName) {
+    if (!container) return;
+    container.innerHTML = '<div class="muted">Loading video…</div>';
+    try {
+      const meta = await requestSignedDownloadUrl(fileName);
+      const signed = meta.downloadUrl || meta.signedUrl || meta.url;
+      if (!signed) throw new Error('No signed URL in response');
+      const vResp = await fetch(signed);
+      if (!vResp.ok) throw new Error('Video download failed');
+      const blob = await vResp.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const vid = document.createElement('video');
+      vid.controls = true;
+      vid.src = objectUrl;
+      vid.style.maxWidth = '100%';
+      vid.preload = 'metadata';
+      container.innerHTML = '';
+      container.appendChild(vid);
+    } catch (e) {
+      container.innerHTML = '<div class="muted">Unable to load video.</div>';
+      throw e;
+    }
   }
 
   function updatePostsPagination(returnedCount) {
