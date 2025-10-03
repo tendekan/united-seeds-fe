@@ -96,6 +96,7 @@
   const postCategory = document.getElementById('post-category');
   const postSubcategory = document.getElementById('post-subcategory');
   const toast = document.getElementById('toast');
+  const globalSpinner = document.getElementById('global-spinner');
 
   // ---------- Initialization ----------
   function init() {
@@ -361,6 +362,7 @@
       if (postVideo) postVideo.value = '';
       return;
     }
+    showGlobalSpinner(true);
     // Prepare local post but only add to UI after BE success
     const newLocalPost = {
       id: generateId('post'),
@@ -431,6 +433,7 @@
       showToast('Failed to submit your post. Please try again.');
     } finally {
       if (postVideo) postVideo.value = '';
+      showGlobalSpinner(false);
     }
   }
 
@@ -674,7 +677,7 @@
 
   async function attachSignedVideoToCard(container, fileName) {
     if (!container) return;
-    container.innerHTML = '<div class="muted">Loading video…</div>';
+    container.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#64748b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke="#cbd5e1" stroke-width="3"></circle><path d="M22 12a10 10 0 0 1-10 10" stroke="#0ea5e9" stroke-width="3" stroke-linecap="round"></path></svg><span>Loading video…</span></div>';
     try {
       const meta = await requestSignedDownloadUrl(fileName);
       const signed = meta.downloadUrl || meta.signedUrl || meta.url;
@@ -693,6 +696,17 @@
     } catch (e) {
       container.innerHTML = '<div class="muted">Unable to load video.</div>';
       throw e;
+    }
+  }
+
+  function showGlobalSpinner(show) {
+    if (!globalSpinner) return;
+    if (show) {
+      globalSpinner.classList.remove('hidden');
+      globalSpinner.setAttribute('aria-hidden', 'false');
+    } else {
+      globalSpinner.classList.add('hidden');
+      globalSpinner.setAttribute('aria-hidden', 'true');
     }
   }
 
