@@ -689,7 +689,11 @@
       const vid = document.createElement('video');
       vid.controls = true;
       vid.src = objectUrl;
+      vid.style.width = '360px';
       vid.style.maxWidth = '100%';
+      vid.style.height = 'auto';
+      vid.style.borderRadius = '8px';
+      vid.style.display = 'block';
       vid.preload = 'metadata';
       container.innerHTML = '';
       container.appendChild(vid);
