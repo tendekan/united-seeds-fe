@@ -358,7 +358,8 @@
     if (!authState) { openAuthModal('Sign in'); return; }
     const text = (postText.value || '').trim();
     if (!text) return;
-    const post = {
+    // Prepare local post but only add to UI after BE success
+    const newLocalPost = {
       id: generateId('post'),
       text,
       category: postCategory ? postCategory.value : '',
@@ -367,10 +368,6 @@
       author: { name: authState.name, photoUrl: authState.photoUrl },
       createdAt: Date.now()
     };
-    posts.unshift(post);
-    saveToStorage(POSTS_KEY, posts);
-    postText.value = '';
-    renderPosts();
 
     // Additionally send to external API as per requirement
     try {
@@ -386,15 +383,15 @@
 
       // If a video file is selected, upload to GCS using a signed URL first
       let uploadedVideoFullName = '';
-      let uploadedVideoPublicUrl = '';
       const file = (postVideo && postVideo.files && postVideo.files[0]) ? postVideo.files[0] : null;
       if (file) {
         try {
           const up = await uploadVideoAndGetPublicUrl(file);
           uploadedVideoFullName = up.fullName || '';
-          uploadedVideoPublicUrl = up.publicUrl || '';
         } catch (e) {
-          console.error('Video upload failed, proceeding without video', e);
+          console.error('Video upload failed', e);
+          showToast('Video upload failed. Your post was not submitted.');
+          return; // do not proceed with post creation if video upload fails
         }
       }
 
@@ -417,13 +414,18 @@
         body: JSON.stringify(payload)
       });
       if (resp.ok) {
+        // Update local store and UI only on success
+        posts.unshift(newLocalPost);
+        saveToStorage(POSTS_KEY, posts);
+        postText.value = '';
+        renderPosts();
         showToast('Your post has been submitted successfully.');
       }
       // Optional UX: notify success without blocking UI
       console.info('Post sent to API', payload);
     } catch (err) {
       console.error('Failed to send post to API', err);
-      // Keep local success even if network fails
+      showToast('Failed to submit your post. Please try again.');
     }
   }
 
