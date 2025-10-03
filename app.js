@@ -383,12 +383,28 @@
         if (!Number.isFinite(num)) return Math.floor(Math.random() * 100);
         return Math.abs(num) % 100; // 0..99
       };
+
+      // If a video file is selected, upload to GCS using a signed URL first
+      let uploadedVideoFullName = '';
+      let uploadedVideoPublicUrl = '';
+      const file = (postVideo && postVideo.files && postVideo.files[0]) ? postVideo.files[0] : null;
+      if (file) {
+        try {
+          const up = await uploadVideoAndGetPublicUrl(file);
+          uploadedVideoFullName = up.fullName || '';
+          uploadedVideoPublicUrl = up.publicUrl || '';
+        } catch (e) {
+          console.error('Video upload failed, proceeding without video', e);
+        }
+      }
+
       const payload = {
         id: twoDigit(Math.floor(Date.now() / 1000)),
         userId: twoDigit(authState.userId ?? Math.floor(Math.random() * 1000000)),
         category: categoryLabel || '',
         subcategory: post.subcategory || '',
-        videoUrl: post.videoName ? post.videoName : 'https://example.com/video.mp4',
+        // Send only the returned full name of the uploaded video as requested
+        videoUrl: uploadedVideoFullName || '',
         postText: text,
         createdAt: new Date().toISOString()
       };
@@ -409,6 +425,47 @@
       console.error('Failed to send post to API', err);
       // Keep local success even if network fails
     }
+  }
+
+  function getFileExtension(name) {
+    const idx = (name || '').lastIndexOf('.');
+    if (idx === -1) return '';
+    return name.slice(idx + 1).toLowerCase();
+  }
+
+  async function requestSignedUploadUrl(fileName, contentTypeHint) {
+    const url = 'https://united-seeds-118701076488.europe-central2.run.app/api/v1/videos/upload-url';
+    const body = {
+      fileName: fileName,
+      contentType: contentTypeHint
+    };
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'accept': '*/*', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error('Failed to get signed upload URL');
+    return resp.json();
+  }
+
+  async function uploadVideoAndGetPublicUrl(file) {
+    const name = file.name || 'video';
+    const ext = getFileExtension(name) || (file.type ? file.type.split('/')[1] : 'mp4');
+    const hint = ext || 'mp4';
+    const meta = await requestSignedUploadUrl(name, hint);
+    const signedUrl = meta.uploadUrl || meta.signedUrl || meta.url;
+    if (!signedUrl) throw new Error('Signed URL missing in response');
+    const putResp = await fetch(signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file
+    });
+    if (!putResp.ok) throw new Error('Upload to GCS failed');
+    // Return both fullName (blob key/path) and public URL if provided
+    return {
+      fullName: meta.fullName || meta.fileName || '',
+      publicUrl: meta.publicUrl || signedUrl.split('?')[0]
+    };
   }
 
   function showToast(message) {
