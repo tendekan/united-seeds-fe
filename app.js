@@ -25,6 +25,14 @@
     }
   }
 
+function getAuthHeaders() {
+  const headers = {};
+  if (authState && authState.accessToken) {
+    headers.Authorization = `Bearer ${authState.accessToken}`;
+  }
+  return headers;
+}
+
   function generateId(prefix) {
     return `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`;
   }
@@ -414,7 +422,8 @@
         method: 'POST',
         headers: {
           'accept': '*/*',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
         },
         body: JSON.stringify(payload)
       });
@@ -470,7 +479,7 @@
     };
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'accept': '*/*', 'Content-Type': 'application/json' },
+      headers: { 'accept': '*/*', 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(body)
     });
     if (!resp.ok) throw new Error('Failed to get signed upload URL');
@@ -612,7 +621,7 @@
   async function fetchServicePosts(categoryKey, page) {
     const apiCat = getApiCategoryParam(categoryKey);
     const url = `https://united-seeds-118701076488.europe-central2.run.app/posts/category/${encodeURIComponent(apiCat)}?page=${page}&size=${pageSize}`;
-    const resp = await fetch(url, { headers: { 'accept': '*/*' } });
+    const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
     if (!resp.ok) throw new Error('Failed to fetch service posts');
     return resp.json();
   }
@@ -668,7 +677,7 @@
     const url = 'https://united-seeds-118701076488.europe-central2.run.app/api/v1/videos/download-url';
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'accept': '*/*', 'Content-Type': 'application/json' },
+      headers: { 'accept': '*/*', 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({ fileName })
     });
     if (!resp.ok) throw new Error('Failed to get signed download URL');
@@ -923,7 +932,8 @@
               userId: user.id,
               email: user.email || '',
               name: user.name,
-              photoUrl: `https://graph.facebook.com/${user.id}/picture?type=large`
+              photoUrl: `https://graph.facebook.com/${user.id}/picture?type=large`,
+              accessToken: response.authResponse.accessToken
             });
           } catch (e) {
             console.error('FB user fetch failed', e);
