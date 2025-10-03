@@ -357,7 +357,10 @@
   async function onCreatePost() {
     if (!authState) { openAuthModal('Sign in'); return; }
     const text = (postText.value || '').trim();
-    if (!text) return;
+    if (!text) {
+      if (postVideo) postVideo.value = '';
+      return;
+    }
     // Prepare local post but only add to UI after BE success
     const newLocalPost = {
       id: generateId('post'),
@@ -426,6 +429,8 @@
     } catch (err) {
       console.error('Failed to send post to API', err);
       showToast('Failed to submit your post. Please try again.');
+    } finally {
+      if (postVideo) postVideo.value = '';
     }
   }
 
