@@ -67,13 +67,13 @@ html, body {
 .posts-list { display: grid; gap: 10px; }
 .settings-view { display: grid; gap: 8px; }
 .check { display: inline-flex; align-items: center; gap: 6px; }
-.settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.settings-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .settings-view select { width: 100%; background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 12px 14px; }
 .settings-view select.compact { padding: 4px 8px; font-size: 12px; border-radius: 6px; height: 28px; max-width: 220px; }
 /* Inline label + select rows in settings */
-.settings-grid label { display: flex; align-items: center; justify-content: flex-start; gap: 4px; }
-.settings-grid label > span { white-space: nowrap; font-size: 12px; }
-.settings-grid label > select { width: auto; flex: 0 0 auto; margin-left: 4px; }
+.settings-grid label { display: grid; gap: 6px; align-items: start; }
+.settings-grid label > span { white-space: normal; font-size: 12px; }
+.settings-grid label > select { width: 100%; margin-left: 0; }
 
 @media (max-width: 720px) {
   .settings-grid { grid-template-columns: 1fr; }
