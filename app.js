@@ -402,7 +402,7 @@
 
       const payload = {
         id: twoDigit(Math.floor(Date.now() / 1000)),
-        userId: authState.name || '',
+        userId: twoDigit(authState.userId ?? Math.floor(Math.random() * 1000000)),
         category: categoryLabel || '',
         subcategory: newLocalPost.subcategory || '',
         // Send only the returned full name of the uploaded video as requested
