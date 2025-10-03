@@ -374,7 +374,7 @@
       const apiBase = 'https://united-seeds-118701076488.europe-central2.run.app/posts';
       // Map internal values to API contract
       const categoryKeyToLabel = new Map(CATEGORY_LABELS);
-      const categoryLabel = categoryKeyToLabel.get(post.category) || post.category || '';
+      const categoryLabel = categoryKeyToLabel.get(newLocalPost.category) || newLocalPost.category || '';
       const twoDigit = (n) => {
         const num = Number(n);
         if (!Number.isFinite(num)) return Math.floor(Math.random() * 100);
@@ -399,7 +399,7 @@
         id: twoDigit(Math.floor(Date.now() / 1000)),
         userId: twoDigit(authState.userId ?? Math.floor(Math.random() * 1000000)),
         category: categoryLabel || '',
-        subcategory: post.subcategory || '',
+        subcategory: newLocalPost.subcategory || '',
         // Send only the returned full name of the uploaded video as requested
         videoUrl: uploadedVideoFullName || '',
         postText: text,
