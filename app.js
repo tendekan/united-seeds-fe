@@ -435,6 +435,25 @@
     return name.slice(idx + 1).toLowerCase();
   }
 
+  function resolveVideoMimeType(fileName, fallbackType) {
+    const ext = getFileExtension(fileName);
+    const map = {
+      'mp4': 'video/mp4',
+      'mov': 'video/quicktime',
+      'qt': 'video/quicktime',
+      'webm': 'video/webm',
+      'mkv': 'video/x-matroska',
+      'avi': 'video/x-msvideo',
+      'm4v': 'video/x-m4v',
+      'mpeg': 'video/mpeg',
+      'mpg': 'video/mpeg',
+      '3gp': 'video/3gpp',
+      '3gpp': 'video/3gpp',
+      'ogg': 'video/ogg'
+    };
+    return map[ext] || (fallbackType || 'application/octet-stream');
+  }
+
   async function requestSignedUploadUrl(fileName, contentTypeHint) {
     const url = 'https://united-seeds-118701076488.europe-central2.run.app/api/v1/videos/upload-url';
     const body = {
@@ -452,14 +471,13 @@
 
   async function uploadVideoAndGetPublicUrl(file) {
     const name = file.name || 'video';
-    const ext = getFileExtension(name) || (file.type ? file.type.split('/')[1] : 'mp4');
-    const hint = ext || 'mp4';
-    const meta = await requestSignedUploadUrl(name, hint);
+    const mime = resolveVideoMimeType(name, file.type);
+    const meta = await requestSignedUploadUrl(name, mime);
     const signedUrl = meta.uploadUrl || meta.signedUrl || meta.url;
     if (!signedUrl) throw new Error('Signed URL missing in response');
     const putResp = await fetch(signedUrl, {
       method: 'PUT',
-      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      headers: { 'Content-Type': mime },
       body: file
     });
     if (!putResp.ok) throw new Error('Upload to GCS failed');
