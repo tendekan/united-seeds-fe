@@ -108,76 +108,19 @@ function getAuthHeaders() {
 
   // ---------- Initialization ----------
   function init() {
-    yearEl.textContent = new Date().getFullYear();
-    seedSkillsIfEmpty();
-    renderAuthUI();
-    renderSkills();
-    attachEvents();
-    initGoogle();
-    initFacebook();
+  // Clear all demo/cached data from localStorage on first load
+  localStorage.removeItem('unitedseeds.auth');
+  localStorage.removeItem('unitedseeds.skills');
+  localStorage.removeItem('unitedseeds.posts');
+  localStorage.removeItem('unitedseeds.settings');
+  yearEl.textContent = new Date().getFullYear();
+  renderAuthUI();
+  renderSkills();
+  attachEvents();
+  initGoogle();
+  initFacebook();
   }
 
-  function seedSkillsIfEmpty() {
-    if (Array.isArray(skills) && skills.length > 0) return;
-    const now = Date.now();
-    const minutes = (m) => m * 60 * 1000;
-    const hours = (h) => h * 60 * 60 * 1000;
-    const days = (d) => d * 24 * 60 * 60 * 1000;
-    const seeded = [
-      {
-        id: generateId('skill'),
-        title: 'Beginner JavaScript Mentoring',
-        rate: 25,
-        description: 'One-on-one sessions to learn JS fundamentals, DOM, and problem solving.',
-        owner: { id: 'u_js_anna', name: 'Anna Morales', email: '', photoUrl: 'https://randomuser.me/api/portraits/women/68.jpg' },
-        createdAt: now - hours(3),
-        tags: ['JavaScript', 'DOM', 'Beginners'],
-        tips: []
-      },
-      {
-        id: generateId('skill'),
-        title: 'Watercolor Painting Techniques',
-        rate: 30,
-        description: 'Learn washes, wet-on-wet, blending, and composition for relaxing art.',
-        owner: { id: 'u_art_noah', name: 'Noah Bennett', email: '', photoUrl: 'https://randomuser.me/api/portraits/men/32.jpg' },
-        createdAt: now - days(1) - minutes(25),
-        tags: ['Watercolor', 'Art', 'Composition'],
-        tips: []
-      },
-      {
-        id: generateId('skill'),
-        title: 'Financial Literacy for Teens',
-        rate: 20,
-        description: 'Budgeting, saving, and the basics of investing explained simply.',
-        owner: { id: 'u_fin_sophia', name: 'Sophia Turner', email: '', photoUrl: 'https://randomuser.me/api/portraits/women/12.jpg' },
-        createdAt: now - days(2) - hours(5),
-        tags: ['Finance', 'Teens', 'Budgeting'],
-        tips: []
-      },
-      {
-        id: generateId('skill'),
-        title: 'Gardening 101: Balcony to Backyard',
-        rate: 18,
-        description: 'Soil, sunlight, watering, and plant selection for any space.',
-        owner: { id: 'u_garden_elinor', name: 'Elinor Hayes', email: '', photoUrl: 'https://randomuser.me/api/portraits/women/71.jpg' },
-        createdAt: now - days(4) - hours(2),
-        tags: ['Gardening', 'Sustainability', 'Outdoors'],
-        tips: []
-      },
-      {
-        id: generateId('skill'),
-        title: 'Intro to Python for Data',
-        rate: 35,
-        description: 'Pandas, NumPy, and plotting for quick insights and reports.',
-        owner: { id: 'u_data_ari', name: 'Ari Cohen', email: '', photoUrl: 'https://randomuser.me/api/portraits/men/41.jpg' },
-        createdAt: now - days(6) - hours(8),
-        tags: ['Python', 'Pandas', 'Data Viz'],
-        tips: []
-      }
-    ];
-    skills = seeded;
-    saveToStorage(STORAGE_KEYS.skills, skills);
-  }
 
   function attachEvents() {
     if (btnOpenSignin) btnOpenSignin.addEventListener('click', () => openAuthModal('Sign in'));
