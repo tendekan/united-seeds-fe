@@ -752,14 +752,19 @@ function getAuthHeaders() {
     // Calculate total pages (assume API returns up to pageSize per page, but doesn't return total count)
     // If returnedCount < pageSize, this is the last page
     let totalPages = currentRemotePage;
-    if (returnedCount === pageSize) {
-      // Can't know total, so show at least current page
-      totalPages = currentRemotePage + 1; // allow next page
+    let isLastPage = returnedCount < pageSize;
+    if (!isLastPage) {
+      totalPages = currentRemotePage + 1;
     }
-    // If not last page, next is enabled; if last, next is disabled
-    postsPage.textContent = `Page ${currentRemotePage} of ${returnedCount < pageSize ? currentRemotePage : currentRemotePage + 1}`;
-    postsPrev.disabled = currentRemotePage <= 1;
-    postsNext.disabled = returnedCount < pageSize;
+    postsPage.textContent = `Page ${currentRemotePage} of ${isLastPage ? currentRemotePage : currentRemotePage + 1}`;
+    // Disable both arrows if only one page
+    if (currentRemotePage === 1 && isLastPage) {
+      postsPrev.disabled = true;
+      postsNext.disabled = true;
+    } else {
+      postsPrev.disabled = currentRemotePage <= 1;
+      postsNext.disabled = isLastPage;
+    }
   }
 
   if (postsPrev) {
