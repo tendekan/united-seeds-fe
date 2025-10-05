@@ -963,14 +963,31 @@ function getAuthHeaders() {
         (async function() {
           try {
             const user = await fetchFacebookUser();
+            const accessToken = response.authResponse.accessToken;
+            // Fetch the user's picture using the Graph API and access token
+            const pictureUrl = await fetchFacebookPicture(user.id, accessToken);
             signInWithProfile({
               provider: 'facebook',
               userId: user.id,
               email: user.email || '',
               name: user.name,
-              photoUrl: `https://graph.facebook.com/${user.id}/picture?type=large`,
-              accessToken: response.authResponse.accessToken
+              photoUrl: pictureUrl,
+              accessToken: accessToken
             });
+  // Fetch Facebook user picture using Graph API and access token
+  async function fetchFacebookPicture(userId, accessToken) {
+    try {
+      const resp = await fetch(`https://graph.facebook.com/${userId}/picture?type=large&redirect=false&access_token=${accessToken}`);
+      const data = await resp.json();
+      if (data && data.data && data.data.url) {
+        return data.data.url;
+      }
+      return '';
+    } catch (e) {
+      console.error('Failed to fetch Facebook picture', e);
+      return '';
+    }
+  }
           } catch (e) {
             console.error('FB user fetch failed', e);
             alert('Facebook sign-in failed.');
