@@ -421,8 +421,8 @@ function getAuthHeaders() {
       }
 
       const payload = {
-        id: twoDigit(Math.floor(Date.now() / 1000)),
-        userId: twoDigit(authState.userId ?? Math.floor(Math.random() * 1000000)),
+  id: twoDigit(Math.floor(Date.now() / 1000)),
+  userId: String(authState.userId ?? Math.floor(Math.random() * 1000000)),
         category: categoryLabel || '',
         subcategory: newLocalPost.subcategory || '',
         // Send only the returned full name of the uploaded video as requested
@@ -806,7 +806,7 @@ function getAuthHeaders() {
       rate,
       description,
       owner: {
-        id: authState.userId,
+        id: String(authState.userId),
         name: authState.name,
         email: authState.email,
         photoUrl: authState.photoUrl
