@@ -617,7 +617,8 @@ function getAuthHeaders() {
   // ---------- Remote Posts (Posts page) with Pagination ----------
   let currentRemoteCategory = '';
   let currentRemotePage = 1;
-  const pageSize = 10;
+  // Set default page size for services posts
+  const pageSize = 5;
 
   function getCategoryLabelFromKey(key) {
     const map = new Map(CATEGORY_LABELS);
@@ -748,7 +749,15 @@ function getAuthHeaders() {
     } else {
       postsPagination.classList.remove('hidden');
     }
-    postsPage.textContent = `Page ${currentRemotePage}`;
+    // Calculate total pages (assume API returns up to pageSize per page, but doesn't return total count)
+    // If returnedCount < pageSize, this is the last page
+    let totalPages = currentRemotePage;
+    if (returnedCount === pageSize) {
+      // Can't know total, so show at least current page
+      totalPages = currentRemotePage + 1; // allow next page
+    }
+    // If not last page, next is enabled; if last, next is disabled
+    postsPage.textContent = `Page ${currentRemotePage} of ${returnedCount < pageSize ? currentRemotePage : currentRemotePage + 1}`;
     postsPrev.disabled = currentRemotePage <= 1;
     postsNext.disabled = returnedCount < pageSize;
   }
