@@ -785,7 +785,7 @@ function getAuthHeaders() {
 
   if (postsNext) {
     postsNext.addEventListener('click', () => {
-      if (!lastPageReached || currentRemotePage < maxRemotePageReached) {
+      if (currentRemotePage < totalRemotePages) {
         currentRemotePage += 1;
         fetchAndRenderRemotePosts();
       }
