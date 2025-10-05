@@ -329,6 +329,8 @@ function getAuthHeaders() {
   function renderAuthUI() {
     const signedIn = Boolean(authState);
     if (signedIn) {
+      // Debug: Log authState and photo URL
+      console.log('[DEBUG] authState:', authState);
       authOutEl.classList.add('hidden');
       authInEl.classList.remove('hidden');
       landing.classList.add('hidden');
@@ -341,10 +343,13 @@ function getAuthHeaders() {
       createSkill.classList.add('hidden');
       // Set profile picture with fallback
       if (authState.photoUrl) {
+        console.log('[DEBUG] Using photoUrl:', authState.photoUrl);
         profilePic.src = authState.photoUrl;
         profilePic.alt = `${authState.name || 'User'}'s profile photo`;
       } else {
-        profilePic.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authState.name || 'User') + '&background=0D8ABC&color=fff&size=128';
+        const fallbackUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authState.name || 'User') + '&background=0D8ABC&color=fff&size=128';
+        console.log('[DEBUG] Using fallback avatar:', fallbackUrl);
+        profilePic.src = fallbackUrl;
         profilePic.alt = 'Default avatar';
       }
       profileName.textContent = authState.name || 'User';
