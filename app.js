@@ -339,8 +339,15 @@ function getAuthHeaders() {
       if (skillsSection) skillsSection.classList.add('hidden');
       appShell.classList.remove('hidden');
       createSkill.classList.add('hidden');
-      profilePic.src = authState.photoUrl || '';
-      profileName.textContent = authState.name || '';
+      // Set profile picture with fallback
+      if (authState.photoUrl) {
+        profilePic.src = authState.photoUrl;
+        profilePic.alt = `${authState.name || 'User'}'s profile photo`;
+      } else {
+        profilePic.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authState.name || 'User') + '&background=0D8ABC&color=fff&size=128';
+        profilePic.alt = 'Default avatar';
+      }
+      profileName.textContent = authState.name || 'User';
       profileEmail.textContent = authState.email || '';
       renderPosts();
     } else {
