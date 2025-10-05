@@ -423,6 +423,7 @@ function getAuthHeaders() {
       const payload = {
   id: twoDigit(Math.floor(Date.now() / 1000)),
   userId: String(authState.userId ?? Math.floor(Math.random() * 1000000)),
+  facebookName: authState.name || '',
         category: categoryLabel || '',
         subcategory: newLocalPost.subcategory || '',
         // Send only the returned full name of the uploaded video as requested
@@ -667,7 +668,7 @@ function getAuthHeaders() {
       el.innerHTML = `
         <div class="post-header">
           <div>
-            <div class="owner-name">User ${escapeHtml(String(p.userId ?? ''))}</div>
+            <div class="owner-name">${escapeHtml(String(p.facebookName || p.userId || ''))}</div>
             <div class="post-meta">${escapeHtml(String(p.category || ''))} ${p.subcategory ? '• ' + escapeHtml(String(p.subcategory)) : ''}</div>
           </div>
         </div>
