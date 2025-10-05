@@ -595,12 +595,13 @@ function getAuthHeaders() {
     if (section === 'create') {
       if (composer) composer.classList.remove('hidden');
     } else if (section === 'services') {
-      if (servicesView) servicesView.classList.remove('hidden');
-      // Do not fetch remote posts here anymore
-      // Reset remote selection and hide posts pagination on services
-      currentRemoteCategory = '';
-      currentRemotePage = 1;
-      if (postsPagination) postsPagination.classList.add('hidden');
+  if (servicesView) servicesView.classList.remove('hidden');
+  // Reset remote selection and hide posts pagination on services
+  currentRemoteCategory = '';
+  currentRemotePage = 1;
+  totalRemotePages = 1;
+  totalRemotePosts = 0;
+  if (postsPagination) postsPagination.classList.add('hidden');
     } else if (section === 'dating') {
       if (datingView) datingView.classList.remove('hidden');
     } else if (section === 'settings') {
