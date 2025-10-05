@@ -618,8 +618,10 @@ function getAuthHeaders() {
   // ---------- Remote Posts (Posts page) with Pagination ----------
   let currentRemoteCategory = '';
   let currentRemotePage = 1;
-  // Set default page size for services posts
   const pageSize = 5;
+  // Track the highest page reached and if last page was reached
+  let totalRemotePosts = 0;
+  let totalRemotePages = 1;
 
   function getCategoryLabelFromKey(key) {
     const map = new Map(CATEGORY_LABELS);
@@ -645,7 +647,17 @@ function getAuthHeaders() {
     postsList.innerHTML = '<div class="muted">Loading…</div>';
     try {
       const data = await fetchServicePosts(currentRemoteCategory, currentRemotePage);
-      const arr = Array.isArray(data) ? data : [];
+      // Expect data to be { posts: [...], total: number }
+      let arr = [];
+      if (Array.isArray(data)) {
+        arr = data;
+        totalRemotePosts = arr.length;
+        totalRemotePages = 1;
+      } else {
+        arr = Array.isArray(data.posts) ? data.posts : [];
+        totalRemotePosts = typeof data.total === 'number' ? data.total : arr.length;
+        totalRemotePages = Math.max(1, Math.ceil(totalRemotePosts / pageSize));
+      }
       renderRemotePosts(arr);
       updatePostsPagination(arr.length);
     } catch (e) {
@@ -750,21 +762,15 @@ function getAuthHeaders() {
     } else {
       postsPagination.classList.remove('hidden');
     }
-    // Calculate total pages (assume API returns up to pageSize per page, but doesn't return total count)
-    // If returnedCount < pageSize, this is the last page
-    let totalPages = currentRemotePage;
-    let isLastPage = returnedCount < pageSize;
-    if (!isLastPage) {
-      totalPages = currentRemotePage + 1;
-    }
-    postsPage.textContent = `Page ${currentRemotePage} of ${isLastPage ? currentRemotePage : currentRemotePage + 1}`;
+    // Use totalRemotePages for total pages
+    postsPage.textContent = `Page ${currentRemotePage} of ${totalRemotePages}`;
     // Disable both arrows if only one page
-    if (currentRemotePage === 1 && isLastPage) {
+    if (totalRemotePages === 1) {
       postsPrev.disabled = true;
       postsNext.disabled = true;
     } else {
       postsPrev.disabled = currentRemotePage <= 1;
-      postsNext.disabled = isLastPage;
+      postsNext.disabled = currentRemotePage >= totalRemotePages;
     }
   }
 
@@ -779,8 +785,10 @@ function getAuthHeaders() {
 
   if (postsNext) {
     postsNext.addEventListener('click', () => {
-      currentRemotePage += 1;
-      fetchAndRenderRemotePosts();
+      if (!lastPageReached || currentRemotePage < maxRemotePageReached) {
+        currentRemotePage += 1;
+        fetchAndRenderRemotePosts();
+      }
     });
   }
 
