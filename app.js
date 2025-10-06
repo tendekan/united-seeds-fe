@@ -390,7 +390,13 @@ function getAuthHeaders() {
 
       const payload = {
   id: twoDigit(Math.floor(Date.now() / 1000)),
-  userId: String(authState.userId ?? Math.floor(Math.random() * 1000000)),
+  // Shorten userId to fit Java long (max 19 digits, signed)
+  userId: (() => {
+    let raw = authState.userId ?? Math.floor(Math.random() * 1000000);
+    let str = String(raw).replace(/\D/g, ''); // digits only
+    if (str.length > 18) str = str.slice(-18); // keep last 18 digits
+    return str;
+  })(),
   facebookName: authState.name || '',
         category: categoryLabel || '',
         subcategory: newLocalPost.subcategory || '',
