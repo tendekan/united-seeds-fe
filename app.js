@@ -1,3 +1,24 @@
+'use strict';
+
+// Load config.env synchronously and expose BACKEND_URL
+let BACKEND_URL = 'https://united-seeds-118701076488.europe-central2.run.app';
+try {
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', 'config.env', false);
+  xhr.send(null);
+  if (xhr.status === 200) {
+    const lines = xhr.responseText.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('BACKEND_URL=')) {
+        BACKEND_URL = line.split('=')[1].trim();
+        break;
+      }
+    }
+  }
+} catch (e) {
+  // fallback to default
+}
+
 (function() {
   'use strict';
 
@@ -72,6 +93,7 @@ function getAuthHeaders() {
   const authModalClose = document.getElementById('auth-modal-close');
   const googleCalendarLogin = null; // removed
   const btnModalFacebook = document.getElementById('btn-modal-facebook');
+  const btnModalGoogle = document.getElementById('btn-modal-google');
   const authModalTitle = document.getElementById('auth-modal-title');
   const heroCta = document.getElementById('btn-hero-cta');
   const heroExplore = document.getElementById('btn-hero-secondary');
@@ -117,6 +139,9 @@ function getAuthHeaders() {
   renderAuthUI();
   renderSkills();
   attachEvents();
+  // Set Google Client ID for OAuth2
+  window.UNITEDSEEDS_GOOGLE_CLIENT_ID =
+    '118701076488-ftubu48jfl4tvk7dg6op1cs25kl7fl7i.apps.googleusercontent.com';
   initGoogle();
   initFacebook();
   }
@@ -125,7 +150,7 @@ function getAuthHeaders() {
   function attachEvents() {
     if (btnOpenSignin) btnOpenSignin.addEventListener('click', () => openAuthModal('Sign in'));
     if (btnOpenSignup) btnOpenSignup.addEventListener('click', () => openAuthModal('Sign up'));
-    // google login removed
+  if (btnModalGoogle) btnModalGoogle.addEventListener('click', onGoogleSignInClick);
     if (btnModalFacebook) btnModalFacebook.addEventListener('click', onFacebookSignInClick);
     if (authModalClose) authModalClose.addEventListener('click', closeAuthModal);
     if (authModal) authModal.addEventListener('click', (e) => {
@@ -339,7 +364,7 @@ function getAuthHeaders() {
 
     // Additionally send to external API as per requirement
     try {
-      const apiBase = 'https://united-seeds-118701076488.europe-central2.run.app/posts';
+  const apiBase = BACKEND_URL + '/posts';
       // Map internal values to API contract
       const categoryKeyToLabel = new Map(CATEGORY_LABELS);
       const categoryLabel = categoryKeyToLabel.get(newLocalPost.category) || newLocalPost.category || '';
@@ -428,7 +453,7 @@ function getAuthHeaders() {
   }
 
   async function requestSignedUploadUrl(fileName, contentTypeHint) {
-    const url = 'https://united-seeds-118701076488.europe-central2.run.app/api/v1/videos/upload-url';
+  const url = BACKEND_URL + '/api/v1/videos/upload-url';
     const body = {
       fileName: fileName,
       contentType: contentTypeHint
@@ -580,7 +605,7 @@ function getAuthHeaders() {
 
   async function fetchServicePosts(categoryKey, page) {
     const apiCat = getApiCategoryParam(categoryKey);
-    const url = `https://united-seeds-118701076488.europe-central2.run.app/posts/category/${encodeURIComponent(apiCat)}?page=${page}&size=${pageSize}`;
+  const url = `${BACKEND_URL}/posts/category/${encodeURIComponent(apiCat)}?page=${page}&size=${pageSize}`;
     const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
     if (!resp.ok) throw new Error('Failed to fetch service posts');
     return resp.json();
@@ -644,7 +669,7 @@ function getAuthHeaders() {
   }
 
   async function requestSignedDownloadUrl(fileName) {
-    const url = 'https://united-seeds-118701076488.europe-central2.run.app/api/v1/videos/download-url';
+  const url = BACKEND_URL + '/api/v1/videos/download-url';
     const resp = await fetch(url, {
       method: 'POST',
       headers: { 'accept': '*/*', 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -856,8 +881,47 @@ function getAuthHeaders() {
   function initGoogle() {
     const clientId = window.UNITEDSEEDS_GOOGLE_CLIENT_ID;
     if (!clientId || clientId.startsWith('YOUR_')) return; // not configured
-    // Button uses One Tap style flow via popup token
+    if (googleInited) return;
+    // Preload Google Identity Services if needed (SDK loaded in index.html)
     googleInited = true;
+  }
+
+  function onGoogleSignInClick() {
+    const clientId = window.UNITEDSEEDS_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId.startsWith('YOUR_')) {
+      alert('Google Login not configured. Set UNITEDSEEDS_GOOGLE_CLIENT_ID in app.js');
+      return;
+    }
+    if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+      alert('Google Identity Services SDK not loaded.');
+      return;
+    }
+    // Use Google Identity Services to get access token
+    window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'openid email profile',
+      callback: async (tokenResponse) => {
+        if (tokenResponse && tokenResponse.access_token) {
+          try {
+            const user = await fetchGoogleUser(tokenResponse.access_token);
+            signInWithProfile({
+              provider: 'google',
+              userId: user.sub,
+              email: user.email || '',
+              name: user.name,
+              photoUrl: user.picture,
+              accessToken: tokenResponse.access_token
+            });
+            closeAuthModal();
+          } catch (e) {
+            console.error('Google user fetch failed', e);
+            alert('Google sign-in failed.');
+          }
+        } else {
+          alert('Google sign-in was cancelled or failed.');
+        }
+      }
+    }).requestAccessToken();
   }
 
 // google oauth link removed
