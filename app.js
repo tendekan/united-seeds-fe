@@ -284,7 +284,13 @@ function getAuthHeaders() {
 
   function openAuthModal(mode) {
     if (authModalTitle) {
-      authModalTitle.textContent = `Продължи към ${mode}`;
+      if (mode === 'Влез') {
+        authModalTitle.textContent = 'Влезни в Системата';
+      } else if (mode === 'Регистрирай се') {
+        authModalTitle.textContent = 'Продължи към регистрация';
+      } else {
+        authModalTitle.textContent = `Продължи към ${mode}`;
+      }
     }
     authModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
