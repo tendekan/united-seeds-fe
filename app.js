@@ -285,7 +285,7 @@ function getAuthHeaders() {
   function openAuthModal(mode) {
     if (authModalTitle) {
       if (mode === 'Влез') {
-        authModalTitle.textContent = 'Влезни в Системата';
+        authModalTitle.textContent = 'Влезни в системата';
       } else if (mode === 'Регистрирай се') {
         authModalTitle.textContent = 'Продължи към регистрация';
       } else {
