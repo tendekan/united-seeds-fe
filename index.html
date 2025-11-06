@@ -86,6 +86,143 @@
             </div>
             <a href="https://www.canva.com/design/DAG3zLhxUqs/pqEfrh_IQ5PaEJn1x1ky5Q/view?utm_content=DAG3zLhxUqs&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">Landing Page Website</a> by Miglena Dzhimova
         </section>
+        <!-- App shell shown after login -->
+        <section id="app-shell" class="card hidden">
+            <div class="app-shell">
+                <aside class="sidebar">
+                    <nav class="menu">
+                        <button id="nav-create" class="menu-item" title="Create Post"><span class="menu-icon">✍️</span><span>Create Post</span></button>
+                        <button id="nav-services" class="menu-item" title="Services"><span class="menu-icon">🧩</span><span>Services</span></button>
+                        <button id="nav-dating" class="menu-item" title="Dating"><span class="menu-icon">💞</span><span>Dating</span></button>
+                        <button id="nav-settings" class="menu-item" title="Settings"><span class="menu-icon">⚙️</span><span>Settings</span></button>
+                    </nav>
+                </aside>
+                <section class="main-pane">
+                    <div id="composer" class="composer hidden">
+                        <div class="grid">
+                            <label>
+                                <span>Category</span>
+                                <select id="post-category" class="compact"></select>
+                            </label>
+                            <label>
+                                <span>Subcategory</span>
+                                <select id="post-subcategory" class="compact"></select>
+                            </label>
+                        </div>
+                        <label>
+                            <span>Video (optional)</span>
+                            <input id="post-video" class="compact" type="file" accept="video/*">
+                        </label>
+                        <textarea id="post-text" class="narrow" rows="8" placeholder="Share something with the community..."></textarea>
+                        <div class="actions">
+                            <button id="btn-post" class="btn">Post</button>
+                        </div>
+                    </div>
+                    <div id="services-view" class="services-view hidden">
+                        <div class="category-tiles">
+                            <button class="category-tile" data-category="gardening" title="Gardening">
+                                <div class="ct-icon">🌿</div>
+                                <div class="ct-title">Gardening</div>
+                            </button>
+                            <button class="category-tile" data-category="home-repairs" title="Home Repairs">
+                                <div class="ct-icon">🛠️</div>
+                                <div class="ct-title">Home Repairs</div>
+                            </button>
+                            <button class="category-tile" data-category="short-stays" title="Short-term stays">
+                                <div class="ct-icon">🏠</div>
+                                <div class="ct-title">Short-term stays</div>
+                            </button>
+                            <button class="category-tile" data-category="long-stays" title="Long-term stays">
+                                <div class="ct-icon">🏡</div>
+                                <div class="ct-title">Long-term stays</div>
+                            </button>
+                            <button class="category-tile" data-category="building" title="Building">
+                                <div class="ct-icon">🏗️</div>
+                                <div class="ct-title">Building</div>
+                            </button>
+                            <button class="category-tile" data-category="finance" title="Finance">
+                                <div class="ct-icon">💼</div>
+                                <div class="ct-title">Finance</div>
+                            </button>
+                            <button class="category-tile" data-category="it-lessons" title="IT Lessons">
+                                <div class="ct-icon">💻</div>
+                                <div class="ct-title">IT Lessons</div>
+                            </button>
+                            <button class="category-tile" data-category="car-repairs" title="Car Repairs">
+                                <div class="ct-icon">🚗</div>
+                                <div class="ct-title">Car Repairs</div>
+                            </button>
+                            <button class="category-tile" data-category="sport" title="Sport">
+                                <div class="ct-icon">🏀</div>
+                                <div class="ct-title">Sport</div>
+                            </button>
+                            <button class="category-tile" data-category="pets" title="Pets">
+                                <div class="ct-icon">🐾</div>
+                                <div class="ct-title">Pets</div>
+                            </button>
+                            <button class="category-tile" data-category="art" title="Art">
+                                <div class="ct-icon">🎨</div>
+                                <div class="ct-title">Art</div>
+                            </button>
+                            <button class="category-tile" data-category="beauty" title="Beauty">
+                                <div class="ct-icon">💄</div>
+                                <div class="ct-title">Beauty</div>
+                            </button>
+                            <button class="category-tile" data-category="healthcare" title="Healthcare">
+                                <div class="ct-icon">🩺</div>
+                                <div class="ct-title">Healthcare</div>
+                            </button>
+                            <button class="category-tile" data-category="fashion" title="Fashion">
+                                <div class="ct-icon">👗</div>
+                                <div class="ct-title">Fashion</div>
+                            </button>
+                            <button class="category-tile" data-category="cooking" title="Cooking">
+                                <div class="ct-icon">👩‍🍳</div>
+                                <div class="ct-title">Cooking</div>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="dating-view" class="dating-view hidden">
+                        <div class="dating-hero">
+                            <img loading="lazy" src="https://images.unsplash.com/photo-1584467735871-3316d0b4f63a?q=80&w=1200&auto=format&fit=crop" alt="Elderly couple smiling together" onerror="this.style.display='none'"/>
+                            <div class="dating-slogan">Find your perfect match now</div>
+                        </div>
+                    </div>
+                    <div id="settings-view" class="settings-view hidden">
+                        <label class="check">
+                            <input type="checkbox" id="opt-use-profile-dating" checked>
+                            <span>Use profile for dating</span>
+                        </label>
+                        <div class="settings-grid">
+                            <label>
+                                <span>Default language</span>
+                                <select id="settings-language" class="compact">
+                                    <option value="en">English</option>
+                                    <option value="bg">Bulgarian</option>
+                                    <option value="ro">Romanian</option>
+                                    <option value="sv">Swedish</option>
+                                    <option value="nl">Dutch</option>
+                                </select>
+                            </label>
+                            <label>
+                                <span>Preferred currency</span>
+                                <select id="settings-currency" class="compact">
+                                    <option value="EUR">EUR</option>
+                                    <option value="BGN">BGN</option>
+                                    <option value="RON">RON</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="posts-list" class="posts-list"></div>
+                    <div id="posts-pagination" class="pagination hidden">
+                        <button id="posts-prev" class="btn btn-secondary" disabled>Previous</button>
+                        <span id="posts-page" class="muted" style="margin: 0 8px;">Page 1</span>
+                        <button id="posts-next" class="btn btn-secondary">Next</button>
+                    </div>
+                </section>
+            </div>
+        </section>
     </main>
 
     <footer class="site-footer">
