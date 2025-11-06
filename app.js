@@ -137,7 +137,7 @@ function getAuthHeaders() {
   localStorage.removeItem('unitedseeds.settings');
   yearEl.textContent = new Date().getFullYear();
   renderAuthUI();
-  renderSkills();
+  if (skillsList && emptyState) renderSkills();
   attachEvents();
   // Set Google Client ID for OAuth2
   window.UNITEDSEEDS_GOOGLE_CLIENT_ID =
@@ -301,14 +301,14 @@ function getAuthHeaders() {
       console.log('[DEBUG] authState:', authState);
       authOutEl.classList.add('hidden');
       authInEl.classList.remove('hidden');
-      landing.classList.add('hidden');
+      if (landing) landing.classList.add('hidden');
       // Hide all pre-login sections for a clean app shell view
       const hero = document.getElementById('hero');
       const skillsSection = document.getElementById('skills');
       if (hero) hero.classList.add('hidden');
       if (skillsSection) skillsSection.classList.add('hidden');
-      appShell.classList.remove('hidden');
-      createSkill.classList.add('hidden');
+      if (appShell) appShell.classList.remove('hidden');
+      if (createSkill) createSkill.classList.add('hidden');
       // Set profile picture with fallback
       if (authState.photoUrl) {
         console.log('[DEBUG] Using photoUrl:', authState.photoUrl);
@@ -326,13 +326,13 @@ function getAuthHeaders() {
     } else {
       authOutEl.classList.remove('hidden');
       authInEl.classList.add('hidden');
-      landing.classList.remove('hidden');
+      if (landing) landing.classList.remove('hidden');
       const hero = document.getElementById('hero');
       const skillsSection = document.getElementById('skills');
       if (hero) hero.classList.remove('hidden');
       if (skillsSection) skillsSection.classList.remove('hidden');
-      appShell.classList.add('hidden');
-      createSkill.classList.add('hidden');
+      if (appShell) appShell.classList.add('hidden');
+      if (createSkill) createSkill.classList.add('hidden');
       profilePic.src = '';
       profileName.textContent = '';
       profileEmail.textContent = '';
