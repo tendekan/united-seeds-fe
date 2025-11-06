@@ -148,8 +148,8 @@ function getAuthHeaders() {
 
 
   function attachEvents() {
-    if (btnOpenSignin) btnOpenSignin.addEventListener('click', () => openAuthModal('Sign in'));
-    if (btnOpenSignup) btnOpenSignup.addEventListener('click', () => openAuthModal('Sign up'));
+    if (btnOpenSignin) btnOpenSignin.addEventListener('click', () => openAuthModal('Влез'));
+    if (btnOpenSignup) btnOpenSignup.addEventListener('click', () => openAuthModal('Регистрирай се'));
   if (btnModalGoogle) btnModalGoogle.addEventListener('click', onGoogleSignInClick);
     if (btnModalFacebook) btnModalFacebook.addEventListener('click', onFacebookSignInClick);
     if (authModalClose) authModalClose.addEventListener('click', closeAuthModal);
@@ -164,7 +164,7 @@ function getAuthHeaders() {
       skillForm.addEventListener('submit', onCreateSkill);
     }
     // search removed
-    if (heroCta) heroCta.addEventListener('click', () => openAuthModal('Sign up'));
+    if (heroCta) heroCta.addEventListener('click', () => openAuthModal('Регистрирай се'));
     if (heroExplore) heroExplore.addEventListener('click', () => {
       document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
     });
@@ -172,7 +172,7 @@ function getAuthHeaders() {
       if (authState) {
         document.getElementById('create-skill')?.scrollIntoView({ behavior: 'smooth' });
       } else {
-        openAuthModal('Sign up');
+        openAuthModal('Регистрирай се');
       }
     });
     if (btnTileLearn) btnTileLearn.addEventListener('click', () => {
@@ -216,39 +216,39 @@ function getAuthHeaders() {
   }
 
   const CATEGORY_LABELS = [
-    ['gardening', 'Gardening'],
-    ['home-repairs', 'Home Repairs'],
-    ['short-stays', 'Short-term stays'],
-    ['long-stays', 'Long-term stays'],
-    ['building', 'Building'],
-    ['finance', 'Finance'],
-    ['it-lessons', 'IT Lessons'],
-    ['car-repairs', 'Car Repairs'],
-    ['sport', 'Sport'],
-    ['pets', 'Pets'],
-    ['art', 'Art'],
-    ['beauty', 'Beauty'],
-    ['healthcare', 'Healthcare'],
-    ['fashion', 'Fashion'],
-    ['cooking', 'Cooking']
+    ['gardening', 'Градинарство'],
+    ['home-repairs', 'Домашни поправки'],
+    ['short-stays', 'Кратки престои'],
+    ['long-stays', 'Дългосрочни престои'],
+    ['building', 'Строителство'],
+    ['finance', 'Финанси'],
+    ['it-lessons', 'ИТ уроци'],
+    ['car-repairs', 'Ремонт на автомобили'],
+    ['sport', 'Спорт'],
+    ['pets', 'Домашни любимци'],
+    ['art', 'Изкуство'],
+    ['beauty', 'Красота'],
+    ['healthcare', 'Здравеопазване'],
+    ['fashion', 'Мода'],
+    ['cooking', 'Готвене']
   ];
 
   const SUBCATEGORY_MAP = {
-    'gardening': ['Plants', 'Landscaping', 'Tools'],
-    'home-repairs': ['Plumbing', 'Electrical', 'Painting'],
-    'short-stays': ['Room', 'Studio', 'Apartment'],
-    'long-stays': ['Room', 'House', 'Apartment'],
-    'building': ['Renovation', 'Construction', 'Consulting'],
-    'finance': ['Budgeting', 'Taxes', 'Investing'],
-    'it-lessons': ['Programming', 'Office Tools', 'Cybersecurity'],
-    'car-repairs': ['Engine', 'Tires', 'Diagnostics'],
-    'sport': ['Fitness', 'Team Sports', 'Coaching'],
-    'pets': ['Grooming', 'Training', 'Sitting'],
-    'art': ['Painting', 'Drawing', 'Crafts'],
-    'beauty': ['Makeup', 'Skincare', 'Hair'],
-    'healthcare': ['Wellness', 'First Aid', 'Nutrition'],
-    'fashion': ['Styling', 'Tailoring', 'Design'],
-    'cooking': ['Baking', 'Meal Prep', 'World Cuisine']
+    'gardening': ['Растения', 'Озеленяване', 'Инструменти'],
+    'home-repairs': ['Водопровод', 'Електричество', 'Боядисване'],
+    'short-stays': ['Стая', 'Студио', 'Апартамент'],
+    'long-stays': ['Стая', 'Къща', 'Апартамент'],
+    'building': ['Реновация', 'Строителство', 'Консултации'],
+    'finance': ['Бюджетиране', 'Данъци', 'Инвестиции'],
+    'it-lessons': ['Програмиране', 'Офис инструменти', 'Киберсигурност'],
+    'car-repairs': ['Двигател', 'Гуми', 'Диагностика'],
+    'sport': ['Фитнес', 'Отборни спортове', 'Тренировки'],
+    'pets': ['Подстригване', 'Дресировка', 'Гледане'],
+    'art': ['Рисуване', 'Чертане', 'Занаяти'],
+    'beauty': ['Грим', 'Грижа за кожата', 'Коса'],
+    'healthcare': ['Здравословен начин на живот', 'Първа помощ', 'Хранене'],
+    'fashion': ['Стилизиране', 'Шивачество', 'Дизайн'],
+    'cooking': ['Печене', 'Приготвяне на храна', 'Световна кухня']
   };
 
   function setupCategories() {
@@ -283,7 +283,9 @@ function getAuthHeaders() {
   }
 
   function openAuthModal(mode) {
-    if (authModalTitle) authModalTitle.textContent = `Continue to ${mode}`;
+    if (authModalTitle) {
+      authModalTitle.textContent = `Продължи към ${mode}`;
+    }
     authModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
   }
@@ -313,14 +315,14 @@ function getAuthHeaders() {
       if (authState.photoUrl) {
         console.log('[DEBUG] Using photoUrl:', authState.photoUrl);
         profilePic.src = authState.photoUrl;
-        profilePic.alt = `${authState.name || 'User'}'s profile photo`;
+        profilePic.alt = `Снимка на профила на ${authState.name || 'Потребител'}`;
       } else {
-        const fallbackUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authState.name || 'User') + '&background=0D8ABC&color=fff&size=128';
+        const fallbackUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authState.name || 'Потребител') + '&background=0D8ABC&color=fff&size=128';
         console.log('[DEBUG] Using fallback avatar:', fallbackUrl);
         profilePic.src = fallbackUrl;
-        profilePic.alt = 'Default avatar';
+        profilePic.alt = 'Аватар по подразбиране';
       }
-      profileName.textContent = authState.name || 'User';
+      profileName.textContent = authState.name || 'Потребител';
       profileEmail.textContent = authState.email || '';
       renderPosts();
     } else {
@@ -344,7 +346,7 @@ function getAuthHeaders() {
   let posts = loadFromStorage(POSTS_KEY, []);
 
   async function onCreatePost() {
-    if (!authState) { openAuthModal('Sign in'); return; }
+    if (!authState) { openAuthModal('Влез'); return; }
     const text = (postText.value || '').trim();
     if (!text) {
       if (postVideo) postVideo.value = '';
@@ -420,13 +422,13 @@ function getAuthHeaders() {
         saveToStorage(POSTS_KEY, posts);
         postText.value = '';
         renderPosts();
-        showToast('Your post has been submitted successfully.');
+        showToast('Вашата публикация беше изпратена успешно.');
       }
       // Optional UX: notify success without blocking UI
       console.info('Post sent to API', payload);
     } catch (err) {
       console.error('Failed to send post to API', err);
-      showToast('Failed to submit your post. Please try again.');
+      showToast('Неуспешно изпращане на публикацията. Моля, опитайте отново.');
     } finally {
       if (postVideo) postVideo.value = '';
       showGlobalSpinner(false);
@@ -619,7 +621,7 @@ function getAuthHeaders() {
 
   async function fetchAndRenderRemotePosts() {
     if (!postsList || !currentRemoteCategory) return;
-    postsList.innerHTML = '<div class="muted">Loading…</div>';
+    postsList.innerHTML = '<div class="muted">Зарежда се…</div>';
     try {
       const data = await fetchServicePosts(currentRemoteCategory, currentRemotePage);
       // Expect data to be { posts: [...], total: number }
@@ -637,7 +639,7 @@ function getAuthHeaders() {
       updatePostsPagination(arr.length);
     } catch (e) {
       console.error(e);
-      postsList.innerHTML = '<div class="muted">Failed to load posts.</div>';
+      postsList.innerHTML = '<div class="muted">Неуспешно зареждане на публикациите.</div>';
       updatePostsPagination(0);
     }
   }
@@ -645,7 +647,7 @@ function getAuthHeaders() {
   function renderRemotePosts(items) {
     postsList.innerHTML = '';
     if (!items.length) {
-      postsList.innerHTML = '<div class="muted">No posts in this category.</div>';
+      postsList.innerHTML = '<div class="muted">Няма публикации в тази категория.</div>';
       return;
     }
     const frag = document.createDocumentFragment();
@@ -687,7 +689,7 @@ function getAuthHeaders() {
 
   async function attachSignedVideoToCard(container, fileName) {
     if (!container) return;
-    container.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#64748b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke="#cbd5e1" stroke-width="3"></circle><path d="M22 12a10 10 0 0 1-10 10" stroke="#0ea5e9" stroke-width="3" stroke-linecap="round"></path></svg><span>Loading video…</span></div>';
+    container.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:#64748b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke="#cbd5e1" stroke-width="3"></circle><path d="M22 12a10 10 0 0 1-10 10" stroke="#0ea5e9" stroke-width="3" stroke-linecap="round"></path></svg><span>Зарежда се видео…</span></div>';
     try {
       const meta = await requestSignedDownloadUrl(fileName);
       const signed = meta.downloadUrl || meta.signedUrl || meta.url;
@@ -708,7 +710,7 @@ function getAuthHeaders() {
       container.innerHTML = '';
       container.appendChild(vid);
     } catch (e) {
-      container.innerHTML = '<div class="muted">Unable to load video.</div>';
+      container.innerHTML = '<div class="muted">Не може да се зареди видеото.</div>';
       throw e;
     }
   }
@@ -738,7 +740,7 @@ function getAuthHeaders() {
       postsPagination.classList.remove('hidden');
     }
     // Use totalRemotePages for total pages
-    postsPage.textContent = `Page ${currentRemotePage} of ${totalRemotePages}`;
+    postsPage.textContent = `Страница ${currentRemotePage} от ${totalRemotePages}`;
     // Disable both arrows if only one page
     if (totalRemotePages === 1) {
       postsPrev.disabled = true;
@@ -779,7 +781,7 @@ function getAuthHeaders() {
   // ---------- Skills ----------
   function onCreateSkill(e) {
     e.preventDefault();
-    if (!authState) return alert('Please sign in to share a skill.');
+    if (!authState) return alert('Моля, влезте, за да споделите умение.');
     const title = (skillTitle.value || '').trim();
     const rate = Number(skillRate.value || 0);
     const description = (skillDesc.value || '').trim();
@@ -852,8 +854,8 @@ function getAuthHeaders() {
   }
 
   function onTip(skillId, amount) {
-    if (!authState) { openAuthModal('Sign in'); return; }
-    if (!amount || amount <= 0) return alert('Enter a valid tip amount.');
+    if (!authState) { openAuthModal('Влез'); return; }
+    if (!amount || amount <= 0) return alert('Въведете валидна сума за бакшиш.');
     const idx = skills.findIndex(s => s.id === skillId);
     if (idx === -1) return;
     skills[idx].tips.push({
@@ -863,7 +865,7 @@ function getAuthHeaders() {
       at: Date.now()
     });
     saveToStorage(STORAGE_KEYS.skills, skills);
-    alert(`Thank you! You tipped ${formatCurrency(amount)} to ${skills[idx].owner.name}.`);
+    alert(`Благодарим! Дадохте бакшиш от ${formatCurrency(amount)} на ${skills[idx].owner.name}.`);
   }
 
   function escapeHtml(str) {
@@ -895,11 +897,11 @@ function getAuthHeaders() {
   function onGoogleSignInClick() {
     const clientId = window.UNITEDSEEDS_GOOGLE_CLIENT_ID;
     if (!clientId || clientId.startsWith('YOUR_')) {
-      alert('Google Login not configured. Set UNITEDSEEDS_GOOGLE_CLIENT_ID in app.js');
+      alert('Google входът не е конфигуриран. Задайте UNITEDSEEDS_GOOGLE_CLIENT_ID в app.js');
       return;
     }
     if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
-      alert('Google Identity Services SDK not loaded.');
+      alert('Google Identity Services SDK не е зареден.');
       return;
     }
     // Use Google Identity Services to get access token
@@ -921,10 +923,10 @@ function getAuthHeaders() {
             closeAuthModal();
           } catch (e) {
             console.error('Google user fetch failed', e);
-            alert('Google sign-in failed.');
+            alert('Входът с Google не беше успешен.');
           }
         } else {
-          alert('Google sign-in was cancelled or failed.');
+          alert('Входът с Google беше отменен или неуспешен.');
         }
       }
     }).requestAccessToken();
@@ -967,7 +969,7 @@ function getAuthHeaders() {
   function onFacebookSignInClick() {
     const appId = window.UNITEDSEEDS_FACEBOOK_APP_ID;
     if (!appId || appId.startsWith('YOUR_')) {
-      alert('Facebook Login not configured. Set UNITEDSEEDS_FACEBOOK_APP_ID in index.html');
+      alert('Facebook входът не е конфигуриран. Задайте UNITEDSEEDS_FACEBOOK_APP_ID в index.html');
       return;
     }
     /* global FB */
@@ -1003,7 +1005,7 @@ function getAuthHeaders() {
   }
           } catch (e) {
             console.error('FB user fetch failed', e);
-            alert('Facebook sign-in failed.');
+            alert('Входът с Facebook не беше успешен.');
           }
         })();
       } else {

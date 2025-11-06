@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UnitedSeeds — Lifelong Learning Platform</title>
-    <meta name="description" content="UnitedSeeds: Share skills, learn from others, pay and tip creators.">
+    <title>UnitedSeeds — Платформа за цяложивотно обучение</title>
+    <meta name="description" content="UnitedSeeds: Споделяйте умения, научете се от други, плащайте и давайте бакшиш на създателите.">
     <link rel="stylesheet" href="./styles.css">
 
     <!--
@@ -44,21 +44,21 @@
         <div class="brand">
             <div class="titles">
                 <h1>UnitedSeeds</h1>
-                <p>Grow skills. Share knowledge. Tip creators.</p>
+                <p>Развивайте умения. Споделяйте знания. Давайте бакшиш на създателите.</p>
             </div>
         </div>
         <nav class="auth-nav">
             <div id="auth-when-signed-out" class="auth-actions">
-                <button id="btn-open-signin" class="btn btn-secondary" title="Sign in">Sign in</button>
-                <button id="btn-open-signup" class="btn" title="Sign up">Sign up</button>
+                <button id="btn-open-signin" class="btn btn-secondary" title="Влез">Влез</button>
+                <button id="btn-open-signup" class="btn" title="Регистрирай се">Регистрирай се</button>
             </div>
             <div id="auth-when-signed-in" class="profile hidden">
-                <img id="profile-picture" class="avatar" alt="Profile" src=""/>
+                <img id="profile-picture" class="avatar" alt="Профил" src=""/>
                 <div class="profile-info">
                     <div id="profile-name" class="name"></div>
                     <div id="profile-email" class="email"></div>
                 </div>
-                <button id="btn-signout" class="btn btn-secondary">Sign out</button>
+                <button id="btn-signout" class="btn btn-secondary">Излез</button>
             </div>
         </nav>
     </header>
@@ -67,14 +67,14 @@
     <div id="auth-modal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
         <div class="modal-backdrop" data-close="true"></div>
         <div class="modal-dialog" role="document">
-            <button class="modal-close" id="auth-modal-close" aria-label="Close">×</button>
-            <h3 id="auth-modal-title">Continue with</h3>
+            <button class="modal-close" id="auth-modal-close" aria-label="Затвори">×</button>
+            <h3 id="auth-modal-title">Продължи с</h3>
             <div class="modal-actions">
-                <button id="btn-modal-google" class="btn btn-google" title="Continue with Google">
-                    <span class="icon">G</span> Continue with Google
+                <button id="btn-modal-google" class="btn btn-google" title="Продължи с Google">
+                    <span class="icon">G</span> Продължи с Google
                 </button>
             </div>
-            <p class="muted small">By continuing, you agree to our Terms and acknowledge our Privacy Policy.</p>
+            <p class="muted small">С продължаването се съгласявате с нашите Условия и признавате нашата Политика за поверителност.</p>
         </div>
     </div>
 
@@ -89,121 +89,121 @@
             <div class="app-shell">
                 <aside class="sidebar">
                     <nav class="menu">
-                        <button id="nav-create" class="menu-item" title="Create Post"><span class="menu-icon">✍️</span><span>Create Post</span></button>
-                        <button id="nav-services" class="menu-item" title="Services"><span class="menu-icon">🧩</span><span>Services</span></button>
-                        <button id="nav-dating" class="menu-item" title="Dating"><span class="menu-icon">💞</span><span>Dating</span></button>
-                        <button id="nav-settings" class="menu-item" title="Settings"><span class="menu-icon">⚙️</span><span>Settings</span></button>
+                        <button id="nav-create" class="menu-item" title="Създай публикация"><span class="menu-icon">✍️</span><span>Създай публикация</span></button>
+                        <button id="nav-services" class="menu-item" title="Услуги"><span class="menu-icon">🧩</span><span>Услуги</span></button>
+                        <button id="nav-dating" class="menu-item" title="Запознанства"><span class="menu-icon">💞</span><span>Запознанства</span></button>
+                        <button id="nav-settings" class="menu-item" title="Настройки"><span class="menu-icon">⚙️</span><span>Настройки</span></button>
                     </nav>
                 </aside>
                 <section class="main-pane">
                     <div id="composer" class="composer hidden">
                         <div class="grid">
                             <label>
-                                <span>Category</span>
+                                <span>Категория</span>
                                 <select id="post-category" class="compact"></select>
                             </label>
                             <label>
-                                <span>Subcategory</span>
+                                <span>Подкатегория</span>
                                 <select id="post-subcategory" class="compact"></select>
                             </label>
                         </div>
                         <label>
-                            <span>Video (optional)</span>
+                            <span>Видео (по избор)</span>
                             <input id="post-video" class="compact" type="file" accept="video/*">
                         </label>
-                        <textarea id="post-text" class="narrow" rows="8" placeholder="Share something with the community..."></textarea>
+                        <textarea id="post-text" class="narrow" rows="8" placeholder="Сподели нещо с общността..."></textarea>
                         <div class="actions">
-                            <button id="btn-post" class="btn">Post</button>
+                            <button id="btn-post" class="btn">Публикувай</button>
                         </div>
                     </div>
                     <div id="services-view" class="services-view hidden">
                         <div class="category-tiles">
-                            <button class="category-tile" data-category="gardening" title="Gardening">
+                            <button class="category-tile" data-category="gardening" title="Градинарство">
                                 <div class="ct-icon">🌿</div>
-                                <div class="ct-title">Gardening</div>
+                                <div class="ct-title">Градинарство</div>
                             </button>
-                            <button class="category-tile" data-category="home-repairs" title="Home Repairs">
+                            <button class="category-tile" data-category="home-repairs" title="Домашни поправки">
                                 <div class="ct-icon">🛠️</div>
-                                <div class="ct-title">Home Repairs</div>
+                                <div class="ct-title">Домашни поправки</div>
                             </button>
-                            <button class="category-tile" data-category="short-stays" title="Short-term stays">
+                            <button class="category-tile" data-category="short-stays" title="Кратки престои">
                                 <div class="ct-icon">🏠</div>
-                                <div class="ct-title">Short-term stays</div>
+                                <div class="ct-title">Кратки престои</div>
                             </button>
-                            <button class="category-tile" data-category="long-stays" title="Long-term stays">
+                            <button class="category-tile" data-category="long-stays" title="Дългосрочни престои">
                                 <div class="ct-icon">🏡</div>
-                                <div class="ct-title">Long-term stays</div>
+                                <div class="ct-title">Дългосрочни престои</div>
                             </button>
-                            <button class="category-tile" data-category="building" title="Building">
+                            <button class="category-tile" data-category="building" title="Строителство">
                                 <div class="ct-icon">🏗️</div>
-                                <div class="ct-title">Building</div>
+                                <div class="ct-title">Строителство</div>
                             </button>
-                            <button class="category-tile" data-category="finance" title="Finance">
+                            <button class="category-tile" data-category="finance" title="Финанси">
                                 <div class="ct-icon">💼</div>
-                                <div class="ct-title">Finance</div>
+                                <div class="ct-title">Финанси</div>
                             </button>
-                            <button class="category-tile" data-category="it-lessons" title="IT Lessons">
+                            <button class="category-tile" data-category="it-lessons" title="ИТ уроци">
                                 <div class="ct-icon">💻</div>
-                                <div class="ct-title">IT Lessons</div>
+                                <div class="ct-title">ИТ уроци</div>
                             </button>
-                            <button class="category-tile" data-category="car-repairs" title="Car Repairs">
+                            <button class="category-tile" data-category="car-repairs" title="Ремонт на автомобили">
                                 <div class="ct-icon">🚗</div>
-                                <div class="ct-title">Car Repairs</div>
+                                <div class="ct-title">Ремонт на автомобили</div>
                             </button>
-                            <button class="category-tile" data-category="sport" title="Sport">
+                            <button class="category-tile" data-category="sport" title="Спорт">
                                 <div class="ct-icon">🏀</div>
-                                <div class="ct-title">Sport</div>
+                                <div class="ct-title">Спорт</div>
                             </button>
-                            <button class="category-tile" data-category="pets" title="Pets">
+                            <button class="category-tile" data-category="pets" title="Домашни любимци">
                                 <div class="ct-icon">🐾</div>
-                                <div class="ct-title">Pets</div>
+                                <div class="ct-title">Домашни любимци</div>
                             </button>
-                            <button class="category-tile" data-category="art" title="Art">
+                            <button class="category-tile" data-category="art" title="Изкуство">
                                 <div class="ct-icon">🎨</div>
-                                <div class="ct-title">Art</div>
+                                <div class="ct-title">Изкуство</div>
                             </button>
-                            <button class="category-tile" data-category="beauty" title="Beauty">
+                            <button class="category-tile" data-category="beauty" title="Красота">
                                 <div class="ct-icon">💄</div>
-                                <div class="ct-title">Beauty</div>
+                                <div class="ct-title">Красота</div>
                             </button>
-                            <button class="category-tile" data-category="healthcare" title="Healthcare">
+                            <button class="category-tile" data-category="healthcare" title="Здравеопазване">
                                 <div class="ct-icon">🩺</div>
-                                <div class="ct-title">Healthcare</div>
+                                <div class="ct-title">Здравеопазване</div>
                             </button>
-                            <button class="category-tile" data-category="fashion" title="Fashion">
+                            <button class="category-tile" data-category="fashion" title="Мода">
                                 <div class="ct-icon">👗</div>
-                                <div class="ct-title">Fashion</div>
+                                <div class="ct-title">Мода</div>
                             </button>
-                            <button class="category-tile" data-category="cooking" title="Cooking">
+                            <button class="category-tile" data-category="cooking" title="Готвене">
                                 <div class="ct-icon">👩‍🍳</div>
-                                <div class="ct-title">Cooking</div>
+                                <div class="ct-title">Готвене</div>
                             </button>
                         </div>
                     </div>
                     <div id="dating-view" class="dating-view hidden">
                         <div class="dating-hero">
-                            <img loading="lazy" src="https://images.unsplash.com/photo-1584467735871-3316d0b4f63a?q=80&w=1200&auto=format&fit=crop" alt="Elderly couple smiling together" onerror="this.style.display='none'"/>
-                            <div class="dating-slogan">Find your perfect match now</div>
+                            <img loading="lazy" src="https://images.unsplash.com/photo-1584467735871-3316d0b4f63a?q=80&w=1200&auto=format&fit=crop" alt="Възрастна двойка се усмихва заедно" onerror="this.style.display='none'"/>
+                            <div class="dating-slogan">Намери своя идеален партньор сега</div>
                         </div>
                     </div>
                     <div id="settings-view" class="settings-view hidden">
                         <label class="check">
                             <input type="checkbox" id="opt-use-profile-dating" checked>
-                            <span>Use profile for dating</span>
+                            <span>Използвай профила за запознанства</span>
                         </label>
                         <div class="settings-grid">
                             <label>
-                                <span>Default language</span>
+                                <span>Език по подразбиране</span>
                                 <select id="settings-language" class="compact">
-                                    <option value="en">English</option>
-                                    <option value="bg">Bulgarian</option>
-                                    <option value="ro">Romanian</option>
-                                    <option value="sv">Swedish</option>
-                                    <option value="nl">Dutch</option>
+                                    <option value="en">Английски</option>
+                                    <option value="bg">Български</option>
+                                    <option value="ro">Румънски</option>
+                                    <option value="sv">Шведски</option>
+                                    <option value="nl">Холандски</option>
                                 </select>
                             </label>
                             <label>
-                                <span>Preferred currency</span>
+                                <span>Предпочитана валута</span>
                                 <select id="settings-currency" class="compact">
                                     <option value="EUR">EUR</option>
                                     <option value="BGN">BGN</option>
@@ -214,9 +214,9 @@
                     </div>
                     <div id="posts-list" class="posts-list"></div>
                     <div id="posts-pagination" class="pagination hidden">
-                        <button id="posts-prev" class="btn btn-secondary" disabled>Previous</button>
-                        <span id="posts-page" class="muted" style="margin: 0 8px;">Page 1</span>
-                        <button id="posts-next" class="btn btn-secondary">Next</button>
+                        <button id="posts-prev" class="btn btn-secondary" disabled>Предишна</button>
+                        <span id="posts-page" class="muted" style="margin: 0 8px;">Страница 1</span>
+                        <button id="posts-next" class="btn btn-secondary">Следваща</button>
                     </div>
                 </section>
             </div>
@@ -235,7 +235,7 @@
                 <circle cx="12" cy="12" r="10" stroke="#cfd8dc" stroke-width="4"></circle>
                 <path d="M22 12a10 10 0 0 1-10 10" stroke="#388E3C" stroke-width="4" stroke-linecap="round"></path>
             </svg>
-            <span>Processing…</span>
+            <span>Обработва се…</span>
         </div>
     </div>
 
