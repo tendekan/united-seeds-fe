@@ -216,44 +216,140 @@ function getAuthHeaders() {
   }
 
   const CATEGORY_LABELS = [
-    ['gardening', 'Градинарство'],
-    ['home-repairs', 'Домашни поправки'],
-    ['short-stays', 'Кратки престои'],
-    ['long-stays', 'Дългосрочни престои'],
-    ['building', 'Строителство'],
-    ['finance', 'Финанси'],
-    ['it-lessons', 'ИТ уроци'],
-    ['car-repairs', 'Ремонт на автомобили'],
-    ['sport', 'Спорт'],
-    ['pets', 'Домашни любимци'],
-    ['art', 'Изкуство'],
-    ['beauty', 'Красота'],
-    ['healthcare', 'Здравеопазване'],
-    ['fashion', 'Мода'],
-    ['cooking', 'Готвене']
+    ['gardening', 'Gardening'],
+    ['home-repairs', 'Home Repairs'],
+    ['short-stays', 'Short-term stays'],
+    ['long-stays', 'Long-term stays'],
+    ['building', 'Building'],
+    ['finance', 'Finance'],
+    ['it-lessons', 'IT Lessons'],
+    ['car-repairs', 'Car Repairs'],
+    ['sport', 'Sport'],
+    ['pets', 'Pets'],
+    ['art', 'Art'],
+    ['beauty', 'Beauty'],
+    ['healthcare', 'Healthcare'],
+    ['fashion', 'Fashion'],
+    ['cooking', 'Cooking']
   ];
 
+  const CATEGORY_LABELS_BG = {
+    'gardening': 'Градинарство',
+    'home-repairs': 'Домашни поправки',
+    'short-stays': 'Кратки престои',
+    'long-stays': 'Дългосрочни престои',
+    'building': 'Строителство',
+    'finance': 'Финанси',
+    'it-lessons': 'ИТ уроци',
+    'car-repairs': 'Ремонт на автомобили',
+    'sport': 'Спорт',
+    'pets': 'Домашни любимци',
+    'art': 'Изкуство',
+    'beauty': 'Красота',
+    'healthcare': 'Здравеопазване',
+    'fashion': 'Мода',
+    'cooking': 'Готвене'
+  };
+
   const SUBCATEGORY_MAP = {
-    'gardening': ['Растения', 'Озеленяване', 'Инструменти'],
-    'home-repairs': ['Водопровод', 'Електричество', 'Боядисване'],
-    'short-stays': ['Стая', 'Студио', 'Апартамент'],
-    'long-stays': ['Стая', 'Къща', 'Апартамент'],
-    'building': ['Реновация', 'Строителство', 'Консултации'],
-    'finance': ['Бюджетиране', 'Данъци', 'Инвестиции'],
-    'it-lessons': ['Програмиране', 'Офис инструменти', 'Киберсигурност'],
-    'car-repairs': ['Двигател', 'Гуми', 'Диагностика'],
-    'sport': ['Фитнес', 'Отборни спортове', 'Тренировки'],
-    'pets': ['Подстригване', 'Дресировка', 'Гледане'],
-    'art': ['Рисуване', 'Чертане', 'Занаяти'],
-    'beauty': ['Грим', 'Грижа за кожата', 'Коса'],
-    'healthcare': ['Здравословен начин на живот', 'Първа помощ', 'Хранене'],
-    'fashion': ['Стилизиране', 'Шивачество', 'Дизайн'],
-    'cooking': ['Печене', 'Приготвяне на храна', 'Световна кухня']
+    'gardening': ['Plants', 'Landscaping', 'Tools'],
+    'home-repairs': ['Plumbing', 'Electrical', 'Painting'],
+    'short-stays': ['Room', 'Studio', 'Apartment'],
+    'long-stays': ['Room', 'House', 'Apartment'],
+    'building': ['Renovation', 'Construction', 'Consulting'],
+    'finance': ['Budgeting', 'Taxes', 'Investing'],
+    'it-lessons': ['Programming', 'Office Tools', 'Cybersecurity'],
+    'car-repairs': ['Engine', 'Tires', 'Diagnostics'],
+    'sport': ['Fitness', 'Team Sports', 'Coaching'],
+    'pets': ['Grooming', 'Training', 'Sitting'],
+    'art': ['Painting', 'Drawing', 'Crafts'],
+    'beauty': ['Makeup', 'Skincare', 'Hair'],
+    'healthcare': ['Wellness', 'First Aid', 'Nutrition'],
+    'fashion': ['Styling', 'Tailoring', 'Design'],
+    'cooking': ['Baking', 'Meal Prep', 'World Cuisine']
+  };
+
+  const SUBCATEGORY_MAP_BG = {
+    'gardening': {
+      'Plants': 'Растения',
+      'Landscaping': 'Озеленяване',
+      'Tools': 'Инструменти'
+    },
+    'home-repairs': {
+      'Plumbing': 'Водопровод',
+      'Electrical': 'Електричество',
+      'Painting': 'Боядисване'
+    },
+    'short-stays': {
+      'Room': 'Стая',
+      'Studio': 'Студио',
+      'Apartment': 'Апартамент'
+    },
+    'long-stays': {
+      'Room': 'Стая',
+      'House': 'Къща',
+      'Apartment': 'Апартамент'
+    },
+    'building': {
+      'Renovation': 'Реновация',
+      'Construction': 'Строителство',
+      'Consulting': 'Консултации'
+    },
+    'finance': {
+      'Budgeting': 'Бюджетиране',
+      'Taxes': 'Данъци',
+      'Investing': 'Инвестиции'
+    },
+    'it-lessons': {
+      'Programming': 'Програмиране',
+      'Office Tools': 'Офис инструменти',
+      'Cybersecurity': 'Киберсигурност'
+    },
+    'car-repairs': {
+      'Engine': 'Двигател',
+      'Tires': 'Гуми',
+      'Diagnostics': 'Диагностика'
+    },
+    'sport': {
+      'Fitness': 'Фитнес',
+      'Team Sports': 'Отборни спортове',
+      'Coaching': 'Тренировки'
+    },
+    'pets': {
+      'Grooming': 'Подстригване',
+      'Training': 'Дресировка',
+      'Sitting': 'Гледане'
+    },
+    'art': {
+      'Painting': 'Рисуване',
+      'Drawing': 'Чертане',
+      'Crafts': 'Занаяти'
+    },
+    'beauty': {
+      'Makeup': 'Грим',
+      'Skincare': 'Грижа за кожата',
+      'Hair': 'Коса'
+    },
+    'healthcare': {
+      'Wellness': 'Здравословен начин на живот',
+      'First Aid': 'Първа помощ',
+      'Nutrition': 'Хранене'
+    },
+    'fashion': {
+      'Styling': 'Стилизиране',
+      'Tailoring': 'Шивачество',
+      'Design': 'Дизайн'
+    },
+    'cooking': {
+      'Baking': 'Печене',
+      'Meal Prep': 'Приготвяне на храна',
+      'World Cuisine': 'Световна кухня'
+    }
   };
 
   function setupCategories() {
     if (!postCategory || !postSubcategory) return;
-    postCategory.innerHTML = CATEGORY_LABELS.map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
+    postCategory.innerHTML = CATEGORY_LABELS.map(([value, label]) => `<option value="${value}">${CATEGORY_LABELS_BG[value] || label}</option>`).join('');
     postCategory.addEventListener('change', () => populateSubcategories(postCategory.value));
     populateSubcategories(CATEGORY_LABELS[0][0]);
   }
@@ -261,7 +357,10 @@ function getAuthHeaders() {
   function populateSubcategories(categoryKey) {
     if (!postSubcategory) return;
     const subs = SUBCATEGORY_MAP[categoryKey] || [];
-    postSubcategory.innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join('');
+    postSubcategory.innerHTML = subs.map(s => {
+      const display = SUBCATEGORY_MAP_BG[categoryKey]?.[s] || s;
+      return `<option value="${s}">${display}</option>`;
+    }).join('');
   }
 
   function setupServiceTileRouting() {
