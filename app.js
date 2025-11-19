@@ -687,11 +687,12 @@ function getAuthHeaders() {
     comments.forEach(comment => {
       const el = document.createElement('div');
       el.className = 'comment-card';
+      const authorName = `User ${comment.userId}`;
       el.innerHTML = `
-        <img class="avatar" src="${comment.author.photoUrl || getAvatarPlaceholder(comment.author.name)}" alt="${comment.author.name}">
+        <img class="avatar" src="${getAvatarPlaceholder(authorName)}" alt="${authorName}">
         <div class="comment-content">
-          <div class="comment-author">${escapeHtml(comment.author.name)}</div>
-          <div class="comment-text">${escapeHtml(comment.text)}</div>
+          <div class="comment-author">${escapeHtml(authorName)}</div>
+          <div class="comment-text">${escapeHtml(comment.commentText)}</div>
         </div>
       `;
       frag.appendChild(el);
@@ -720,7 +721,7 @@ function getAuthHeaders() {
     }
 
     const newComment = {
-      text,
+      commentText: text,
       author: {
         name: authState.name,
         photoUrl: authState.photoUrl,
@@ -728,7 +729,20 @@ function getAuthHeaders() {
     };
 
     try {
-      const url = `${BACKEND_URL}/posts/${postId}/comments`;
+      const url = `${BACKEND_URL}/comments`;
+      const userId = (() => {
+        let raw = authState.userId ?? Math.floor(Math.random() * 1000000);
+        let str = String(raw).replace(/\D/g, ''); // digits only
+        if (str.length > 18) str = str.slice(-18); // keep last 18 digits
+        return str;
+      })();
+
+      const payload = {
+        postId: Number(postId),
+        userId: Number(userId),
+        commentText: text,
+      };
+
       const resp = await fetch(url, {
         method: 'POST',
         headers: {
@@ -736,12 +750,15 @@ function getAuthHeaders() {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify(payload),
       });
 
       if (!resp.ok) {
         throw new Error('Failed to post comment');
       }
+      const respData = await resp.json();
+
+      const newCommentWithAuthor = { ...respData, author: { name: authState.name, photoUrl: authState.photoUrl } };
 
       const commentsList = postCard.querySelector('.comments-list');
       
@@ -753,10 +770,10 @@ function getAuthHeaders() {
       const el = document.createElement('div');
       el.className = 'comment-card';
       el.innerHTML = `
-        <img class="avatar" src="${newComment.author.photoUrl || getAvatarPlaceholder(newComment.author.name)}" alt="${newComment.author.name}">
+        <img class="avatar" src="${newCommentWithAuthor.author.photoUrl || getAvatarPlaceholder(newCommentWithAuthor.author.name)}" alt="${newCommentWithAuthor.author.name}">
         <div class="comment-content">
-          <div class="comment-author">${escapeHtml(newComment.author.name)}</div>
-          <div class="comment-text">${escapeHtml(newComment.text)}</div>
+          <div class="comment-author">${escapeHtml(newCommentWithAuthor.author.name)}</div>
+          <div class="comment-text">${escapeHtml(newCommentWithAuthor.commentText)}</div>
         </div>
       `;
       commentsList.appendChild(el);
