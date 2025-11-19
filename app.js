@@ -687,9 +687,8 @@ function getAuthHeaders() {
     comments.forEach(comment => {
       const el = document.createElement('div');
       el.className = 'comment-card';
-      const authorName = comment.authorName || `User ${comment.userId}`;
+      const authorName = comment.authorName || `User ${comment.userName}`;
       el.innerHTML = `
-        <img class="avatar" src="${getAvatarPlaceholder(authorName)}" alt="${authorName}">
         <div class="comment-content">
           <div class="comment-author">${escapeHtml(authorName)}</div>
           <div class="comment-text">${escapeHtml(comment.commentText)}</div>
@@ -767,7 +766,6 @@ function getAuthHeaders() {
       const el = document.createElement('div');
       el.className = 'comment-card';
       el.innerHTML = `
-        <img class="avatar" src="${getAvatarPlaceholder(newCommentForRender.authorName)}" alt="${newCommentForRender.authorName}">
         <div class="comment-content">
           <div class="comment-author">${escapeHtml(newCommentForRender.authorName)}</div>
           <div class="comment-text">${escapeHtml(newCommentForRender.commentText)}</div>
