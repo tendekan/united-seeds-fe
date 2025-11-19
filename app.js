@@ -635,7 +635,7 @@ function getAuthHeaders() {
         <div class="post-actions">
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
-        <div class="comments-section">
+        <div class="comments-section hidden">
           <div class="comments-list"></div>
           <form class="comment-form">
             <input type="text" class="comment-input" placeholder="Напиши коментар...">
@@ -719,14 +719,6 @@ function getAuthHeaders() {
       openAuthModal('Влез');
       return;
     }
-
-    const newComment = {
-      commentText: text,
-      author: {
-        name: authState.name,
-        photoUrl: authState.photoUrl,
-      },
-    };
 
     try {
       const url = `${BACKEND_URL}/comments`;
@@ -930,7 +922,7 @@ function getAuthHeaders() {
         <div class="post-actions">
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
-        <div class="comments-section">
+        <div class="comments-section hidden">
           <div class="comments-list"></div>
           <form class="comment-form">
             <input type="text" class="comment-input" placeholder="Напиши коментар...">
@@ -939,15 +931,6 @@ function getAuthHeaders() {
         </div>
       `;
       el.setAttribute('data-post-id', p.id);
-
-      const commentsList = el.querySelector('.comments-list');
-      commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
-      fetchComments(p.id)
-        .then(comments => renderComments(comments, commentsList))
-        .catch(error => {
-          console.error('Failed to fetch comments:', error);
-          commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
-        });
 
       const fileName = (p.videoUrl || p.videoLink || '').toString().trim();
       if (fileName) {
