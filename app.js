@@ -144,9 +144,17 @@ function getAuthHeaders() {
     '118701076488-ftubu48jfl4tvk7dg6op1cs25kl7fl7i.apps.googleusercontent.com';
   initGoogle();
   initFacebook();
-  postsList.addEventListener('click', (e) => {
+  postsList.addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-toggle-comments')) {
       toggleComments(e.target);
+    } else if (e.target.classList.contains('btn-edit-comment')) {
+      e.preventDefault();
+      const commentId = e.target.getAttribute('data-comment-id');
+      await handleEditComment(commentId);
+    } else if (e.target.classList.contains('btn-delete-comment')) {
+      e.preventDefault();
+      const commentId = e.target.getAttribute('data-comment-id');
+      await handleDeleteComment(commentId);
     }
   });
   }
@@ -454,6 +462,9 @@ function getAuthHeaders() {
   // ---------- Posts ----------
   const POSTS_KEY = 'unitedseeds.posts';
   let posts = loadFromStorage(POSTS_KEY, []);
+  
+  // ---------- Comments Pagination State ----------
+  const commentPaginationState = {}; // { postId: { currentPage: 1, totalPages: 1, totalComments: 0 } }
 
   async function onCreatePost() {
     if (!authState) { openAuthModal('Влез'); return; }
@@ -657,11 +668,19 @@ function getAuthHeaders() {
 
     const isHidden = commentsSection.classList.toggle('hidden');
 
-    if (!isHidden && !commentsList.hasChildNodes()) {
+    if (!isHidden) {
+      // Initialize pagination state if not exists
+      if (!commentPaginationState[postId]) {
+        commentPaginationState[postId] = { currentPage: 1, totalPages: 1, totalComments: 0 };
+      }
+      // Always reload comments when opening
       commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
       try {
-        const comments = await fetchComments(postId);
-        renderComments(comments, commentsList);
+        const state = commentPaginationState[postId];
+        const data = await fetchComments(postId, state.currentPage, 5);
+        state.totalPages = data.totalPages;
+        state.totalComments = data.total;
+        renderComments(data.comments, commentsList, postId, state);
       } catch (error) {
         console.error('Failed to fetch comments:', error);
         commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
@@ -669,17 +688,30 @@ function getAuthHeaders() {
     }
   }
 
-  async function fetchComments(postId) {
-    const url = `${BACKEND_URL}/posts/${postId}/comments`;
+  async function fetchComments(postId, page = 1, size = 5) {
+    const url = `${BACKEND_URL}/posts/${postId}/comments?page=${page}&size=${size}`;
     const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
     if (!resp.ok) throw new Error('Failed to fetch comments');
-    return resp.json();
+    const data = await resp.json();
+    // Handle both array response and paginated response
+    if (Array.isArray(data)) {
+      return { comments: data, total: data.length, totalPages: Math.ceil(data.length / size) };
+    }
+    return {
+      comments: data.content || data.comments || [],
+      total: data.totalElements || data.total || 0,
+      totalPages: data.totalPages || Math.ceil((data.totalElements || data.total || 0) / size)
+    };
   }
 
-  function renderComments(comments, commentsListEl) {
+  function renderComments(comments, commentsListEl, postId, paginationState) {
     commentsListEl.innerHTML = '';
     if (!comments.length) {
       commentsListEl.innerHTML = '<div class="muted">Все още няма коментари.</div>';
+      // Still show pagination if there are pages
+      if (paginationState && paginationState.totalPages > 1) {
+        renderCommentPagination(commentsListEl.parentElement, postId, paginationState);
+      }
       return;
     }
 
@@ -687,22 +719,102 @@ function getAuthHeaders() {
     comments.forEach(comment => {
       const el = document.createElement('div');
       el.className = 'comment-card';
-      const authorName = comment.authorName || `${comment.userName}`;
+      el.setAttribute('data-comment-id', comment.id);
+      const authorName = comment.authorName || comment.userName || 'Потребител';
+      const isOwner = authState && (String(comment.userId) === String(authState.userId));
+      
       el.innerHTML = `
         <div class="comment-content">
-          <div class="comment-author">${escapeHtml(authorName)}</div>
-          <div class="comment-text">${escapeHtml(comment.commentText)}</div>
+          <div class="comment-header">
+            <div class="comment-author">${escapeHtml(authorName)}</div>
+            ${isOwner ? `
+              <div class="comment-actions">
+                <button class="btn-link btn-edit-comment" data-comment-id="${comment.id}" title="Редактирай">✏️</button>
+                <button class="btn-link btn-delete-comment" data-comment-id="${comment.id}" title="Изтрий">🗑️</button>
+              </div>
+            ` : ''}
+          </div>
+          <div class="comment-text" data-comment-text="${comment.id}">${escapeHtml(comment.commentText)}</div>
+          <div class="comment-meta">${comment.createdAt ? new Date(comment.createdAt).toLocaleString('bg-BG') : ''}</div>
         </div>
       `;
       frag.appendChild(el);
     });
     commentsListEl.appendChild(frag);
+    
+    // Render pagination if needed
+    if (paginationState && paginationState.totalPages > 1) {
+      renderCommentPagination(commentsListEl.parentElement, postId, paginationState);
+    } else {
+      // Remove pagination if it exists
+      const existingPagination = commentsListEl.parentElement.querySelector('.comments-pagination');
+      if (existingPagination) {
+        existingPagination.remove();
+      }
+    }
+  }
+  
+  function renderCommentPagination(commentsSection, postId, paginationState) {
+    // Remove existing pagination
+    const existing = commentsSection.querySelector('.comments-pagination');
+    if (existing) existing.remove();
+    
+    const paginationEl = document.createElement('div');
+    paginationEl.className = 'comments-pagination';
+    paginationEl.innerHTML = `
+      <button class="btn btn-secondary btn-sm btn-comments-prev" ${paginationState.currentPage <= 1 ? 'disabled' : ''}>Предишна</button>
+      <span class="muted" style="margin: 0 8px;">Страница ${paginationState.currentPage} от ${paginationState.totalPages}</span>
+      <button class="btn btn-secondary btn-sm btn-comments-next" ${paginationState.currentPage >= paginationState.totalPages ? 'disabled' : ''}>Следваща</button>
+    `;
+    
+    // Insert before comment form
+    const commentForm = commentsSection.querySelector('.comment-form');
+    commentsSection.insertBefore(paginationEl, commentForm);
+    
+    // Add event listeners
+    const prevBtn = paginationEl.querySelector('.btn-comments-prev');
+    const nextBtn = paginationEl.querySelector('.btn-comments-next');
+    
+    prevBtn.addEventListener('click', async () => {
+      if (paginationState.currentPage > 1) {
+        paginationState.currentPage--;
+        const commentsList = commentsSection.querySelector('.comments-list');
+        commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
+        try {
+          const data = await fetchComments(postId, paginationState.currentPage, 5);
+          paginationState.totalPages = data.totalPages;
+          paginationState.totalComments = data.total;
+          renderComments(data.comments, commentsList, postId, paginationState);
+        } catch (error) {
+          console.error('Failed to fetch comments:', error);
+          commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
+        }
+      }
+    });
+    
+    nextBtn.addEventListener('click', async () => {
+      if (paginationState.currentPage < paginationState.totalPages) {
+        paginationState.currentPage++;
+        const commentsList = commentsSection.querySelector('.comments-list');
+        commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
+        try {
+          const data = await fetchComments(postId, paginationState.currentPage, 5);
+          paginationState.totalPages = data.totalPages;
+          paginationState.totalComments = data.total;
+          renderComments(data.comments, commentsList, postId, paginationState);
+        } catch (error) {
+          console.error('Failed to fetch comments:', error);
+          commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
+        }
+      }
+    });
   }
 
   postsList.addEventListener('submit', (e) => {
-    if (e.target.classList.contains('comment-form')) {
+    const form = e.target.closest('.comment-form');
+    if (form) {
       e.preventDefault();
-      onCommentSubmit(e.target);
+      onCommentSubmit(form);
     }
   });
 
@@ -757,21 +869,26 @@ function getAuthHeaders() {
       };
 
       const commentsList = postCard.querySelector('.comments-list');
+      const postId = postCard.dataset.postId;
       
-      // If the "no comments" message is showing, remove it
-      if (commentsList.querySelector('.muted')) {
-        commentsList.innerHTML = '';
+      // Reset to first page and reload comments
+      if (!commentPaginationState[postId]) {
+        commentPaginationState[postId] = { currentPage: 1, totalPages: 1, totalComments: 0 };
       }
-
-      const el = document.createElement('div');
-      el.className = 'comment-card';
-      el.innerHTML = `
-        <div class="comment-content">
-          <div class="comment-author">${escapeHtml(newCommentForRender.authorName)}</div>
-          <div class="comment-text">${escapeHtml(newCommentForRender.commentText)}</div>
-        </div>
-      `;
-      commentsList.appendChild(el);
+      commentPaginationState[postId].currentPage = 1;
+      
+      // Reload comments to show the new one
+      commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
+      try {
+        const state = commentPaginationState[postId];
+        const data = await fetchComments(postId, state.currentPage, 5);
+        state.totalPages = data.totalPages;
+        state.totalComments = data.total;
+        renderComments(data.comments, commentsList, postId, state);
+      } catch (error) {
+        console.error('Failed to reload comments:', error);
+      }
+      
       input.value = '';
       showToast('Вашият коментар беше публикуван.');
 
@@ -779,6 +896,130 @@ function getAuthHeaders() {
       console.error('Failed to submit comment:', error);
       showToast('Неуспешно изпращане на коментар.');
     }
+  }
+
+  async function handleEditComment(commentId) {
+    const commentCard = document.querySelector(`[data-comment-id="${commentId}"]`);
+    if (!commentCard) return;
+    
+    const commentTextEl = commentCard.querySelector('[data-comment-text]');
+    const currentText = commentTextEl.textContent;
+    
+    // Create edit input
+    const editInput = document.createElement('input');
+    editInput.type = 'text';
+    editInput.className = 'comment-input';
+    editInput.value = currentText;
+    editInput.style.width = '100%';
+    editInput.style.marginTop = '8px';
+    
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'btn btn-sm';
+    saveBtn.textContent = 'Запази';
+    saveBtn.style.marginTop = '8px';
+    saveBtn.style.marginRight = '8px';
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn btn-secondary btn-sm';
+    cancelBtn.textContent = 'Отказ';
+    cancelBtn.style.marginTop = '8px';
+    
+    const originalText = commentTextEl.innerHTML;
+    commentTextEl.innerHTML = '';
+    commentTextEl.appendChild(editInput);
+    commentTextEl.appendChild(saveBtn);
+    commentTextEl.appendChild(cancelBtn);
+    editInput.focus();
+    
+    const cleanup = () => {
+      commentTextEl.innerHTML = originalText;
+    };
+    
+    saveBtn.addEventListener('click', async () => {
+      const newText = editInput.value.trim();
+      if (!newText) {
+        showToast('Коментарът не може да бъде празен.');
+        return;
+      }
+      
+      try {
+        await updateComment(commentId, newText);
+        commentTextEl.innerHTML = escapeHtml(newText);
+        showToast('Коментарът беше обновен.');
+      } catch (error) {
+        console.error('Failed to update comment:', error);
+        showToast('Неуспешно обновяване на коментар.');
+        cleanup();
+      }
+    });
+    
+    cancelBtn.addEventListener('click', cleanup);
+    editInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        saveBtn.click();
+      } else if (e.key === 'Escape') {
+        cleanup();
+      }
+    });
+  }
+
+  async function handleDeleteComment(commentId) {
+    if (!confirm('Сигурни ли сте, че искате да изтриете този коментар?')) {
+      return;
+    }
+    
+    try {
+      await deleteComment(commentId);
+      const commentCard = document.querySelector(`[data-comment-id="${commentId}"]`);
+      if (commentCard) {
+        const postCard = commentCard.closest('.post-card');
+        const postId = postCard.dataset.postId;
+        const commentsList = postCard.querySelector('.comments-list');
+        const commentsSection = postCard.querySelector('.comments-section');
+        
+        // Reload comments
+        commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
+        const state = commentPaginationState[postId] || { currentPage: 1, totalPages: 1, totalComments: 0 };
+        const data = await fetchComments(postId, state.currentPage, 5);
+        state.totalPages = data.totalPages;
+        state.totalComments = data.total;
+        renderComments(data.comments, commentsList, postId, state);
+        
+        showToast('Коментарът беше изтрит.');
+      }
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      showToast('Неуспешно изтриване на коментар.');
+    }
+  }
+
+  async function updateComment(commentId, newText) {
+    const url = `${BACKEND_URL}/comments/${commentId}`;
+    const resp = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ commentText: newText })
+    });
+    if (!resp.ok) throw new Error('Failed to update comment');
+    return resp.json();
+  }
+
+  async function deleteComment(commentId) {
+    const url = `${BACKEND_URL}/comments/${commentId}`;
+    const resp = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'accept': '*/*',
+        ...getAuthHeaders()
+      }
+    });
+    if (!resp.ok) throw new Error('Failed to delete comment');
   }
 
   function filterByCategory(categoryKey) {
