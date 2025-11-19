@@ -687,7 +687,7 @@ function getAuthHeaders() {
     comments.forEach(comment => {
       const el = document.createElement('div');
       el.className = 'comment-card';
-      const authorName = `User ${comment.userId}`;
+      const authorName = comment.authorName || `User ${comment.userId}`;
       el.innerHTML = `
         <img class="avatar" src="${getAvatarPlaceholder(authorName)}" alt="${authorName}">
         <div class="comment-content">
@@ -758,7 +758,11 @@ function getAuthHeaders() {
       }
       const respData = await resp.json();
 
-      const newCommentWithAuthor = { ...respData, author: { name: authState.name, photoUrl: authState.photoUrl } };
+      // Optimistically render the new comment with the author's name from the auth state.
+      const newCommentForRender = { 
+        ...respData, 
+        authorName: authState.name 
+      };
 
       const commentsList = postCard.querySelector('.comments-list');
       
@@ -770,10 +774,10 @@ function getAuthHeaders() {
       const el = document.createElement('div');
       el.className = 'comment-card';
       el.innerHTML = `
-        <img class="avatar" src="${newCommentWithAuthor.author.photoUrl || getAvatarPlaceholder(newCommentWithAuthor.author.name)}" alt="${newCommentWithAuthor.author.name}">
+        <img class="avatar" src="${getAvatarPlaceholder(newCommentForRender.authorName)}" alt="${newCommentForRender.authorName}">
         <div class="comment-content">
-          <div class="comment-author">${escapeHtml(newCommentWithAuthor.author.name)}</div>
-          <div class="comment-text">${escapeHtml(newCommentWithAuthor.commentText)}</div>
+          <div class="comment-author">${escapeHtml(newCommentForRender.authorName)}</div>
+          <div class="comment-text">${escapeHtml(newCommentForRender.commentText)}</div>
         </div>
       `;
       commentsList.appendChild(el);
