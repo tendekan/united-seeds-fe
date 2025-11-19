@@ -693,14 +693,40 @@ function getAuthHeaders() {
     const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
     if (!resp.ok) throw new Error('Failed to fetch comments');
     const data = await resp.json();
+    
     // Handle both array response and paginated response
     if (Array.isArray(data)) {
-      return { comments: data, total: data.length, totalPages: Math.ceil(data.length / size) };
+      const totalPages = Math.ceil(data.length / size);
+      return { comments: data, total: data.length, totalPages: totalPages };
     }
+    
+    // Handle Spring Page format or custom paginated format
+    const comments = data.content || data.comments || [];
+    const total = data.totalElements || data.total || data.totalItems || data.totalCount || 0;
+    
+    // Calculate totalPages - if backend provides it, use it, otherwise calculate
+    let totalPages = data.totalPages;
+    if (!totalPages && total > 0) {
+      totalPages = Math.ceil(total / size);
+    } else if (!totalPages) {
+      // If we don't have total, but we got a full page of comments, assume there might be more
+      totalPages = comments.length === size ? 2 : 1;
+    }
+    
+    console.log('Comment pagination data:', { 
+      total, 
+      totalPages, 
+      commentsCount: comments.length, 
+      page, 
+      size, 
+      hasTotalPages: !!data.totalPages,
+      rawData: data 
+    });
+    
     return {
-      comments: data.content || data.comments || [],
-      total: data.totalElements || data.total || 0,
-      totalPages: data.totalPages || Math.ceil((data.totalElements || data.total || 0) / size)
+      comments: comments,
+      total: total || comments.length, // Fallback to comments.length if no total provided
+      totalPages: totalPages
     };
   }
 
@@ -748,7 +774,18 @@ function getAuthHeaders() {
     commentsListEl.appendChild(frag);
     
     // Render pagination if needed
-    if (paginationState && paginationState.totalPages > 1) {
+    // Always render pagination if we have pagination state and more than 1 page
+    // Also check if we have comments and the state indicates multiple pages
+    const shouldShowPagination = paginationState && (
+      paginationState.totalPages > 1 || 
+      (comments.length === 5 && paginationState.totalComments > 5) // If we got 5 comments, there might be more
+    );
+    
+    if (shouldShowPagination) {
+      // Ensure totalPages is at least 2 if we have more than 5 comments
+      if (paginationState.totalComments > 5 && paginationState.totalPages === 1) {
+        paginationState.totalPages = Math.ceil(paginationState.totalComments / 5);
+      }
       renderCommentPagination(commentsListEl.parentElement, postId, paginationState);
     } else {
       // Remove pagination if it exists
