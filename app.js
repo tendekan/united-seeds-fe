@@ -687,7 +687,7 @@ function getAuthHeaders() {
     comments.forEach(comment => {
       const el = document.createElement('div');
       el.className = 'comment-card';
-      const authorName = comment.authorName || `User ${comment.userName}`;
+      const authorName = comment.authorName || `${comment.userName}`;
       el.innerHTML = `
         <div class="comment-content">
           <div class="comment-author">${escapeHtml(authorName)}</div>
