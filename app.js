@@ -144,6 +144,11 @@ function getAuthHeaders() {
     '118701076488-ftubu48jfl4tvk7dg6op1cs25kl7fl7i.apps.googleusercontent.com';
   initGoogle();
   initFacebook();
+  postsList.addEventListener('click', (e) => {
+    if (e.target.classList.contains('btn-toggle-comments')) {
+      toggleComments(e.target);
+    }
+  });
   }
 
 
@@ -627,10 +632,141 @@ function getAuthHeaders() {
         <div class="post-text">${escapeHtml(p.text)}</div>
         ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
         ${p.videoName ? `<div class="post-meta">Attached video: ${escapeHtml(p.videoName)}</div>` : ''}
+        <div class="post-actions">
+          <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
+        </div>
+        <div class="comments-section hidden">
+          <div class="comments-list"></div>
+          <form class="comment-form">
+            <input type="text" class="comment-input" placeholder="Напиши коментар...">
+            <button type="submit" class="btn btn-sm">Публикувай</button>
+          </form>
+        </div>
       `;
+      el.setAttribute('data-post-id', p.id);
       frag.appendChild(el);
     });
     postsList.appendChild(frag);
+  }
+
+  async function toggleComments(button) {
+    const postCard = button.closest('.post-card');
+    const commentsSection = postCard.querySelector('.comments-section');
+    const commentsList = postCard.querySelector('.comments-list');
+    const postId = postCard.dataset.postId;
+
+    const isHidden = commentsSection.classList.toggle('hidden');
+
+    if (!isHidden && !commentsList.hasChildNodes()) {
+      commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
+      try {
+        const comments = await fetchComments(postId);
+        renderComments(comments, commentsList);
+      } catch (error) {
+        console.error('Failed to fetch comments:', error);
+        commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
+      }
+    }
+  }
+
+  async function fetchComments(postId) {
+    const url = `${BACKEND_URL}/posts/${postId}/comments`;
+    const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
+    if (!resp.ok) throw new Error('Failed to fetch comments');
+    return resp.json();
+  }
+
+  function renderComments(comments, commentsListEl) {
+    commentsListEl.innerHTML = '';
+    if (!comments.length) {
+      commentsListEl.innerHTML = '<div class="muted">Все още няма коментари.</div>';
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    comments.forEach(comment => {
+      const el = document.createElement('div');
+      el.className = 'comment-card';
+      el.innerHTML = `
+        <img class="avatar" src="${comment.author.photoUrl || getAvatarPlaceholder(comment.author.name)}" alt="${comment.author.name}">
+        <div class="comment-content">
+          <div class="comment-author">${escapeHtml(comment.author.name)}</div>
+          <div class="comment-text">${escapeHtml(comment.text)}</div>
+        </div>
+      `;
+      frag.appendChild(el);
+    });
+    commentsListEl.appendChild(frag);
+  }
+
+  postsList.addEventListener('submit', (e) => {
+    if (e.target.classList.contains('comment-form')) {
+      e.preventDefault();
+      onCommentSubmit(e.target);
+    }
+  });
+
+  async function onCommentSubmit(form) {
+    const postCard = form.closest('.post-card');
+    const postId = postCard.dataset.postId;
+    const input = form.querySelector('.comment-input');
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    if (!authState) {
+      openAuthModal('Влез');
+      return;
+    }
+
+    const newComment = {
+      text,
+      author: {
+        name: authState.name,
+        photoUrl: authState.photoUrl,
+      },
+    };
+
+    try {
+      const url = `${BACKEND_URL}/posts/${postId}/comments`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!resp.ok) {
+        throw new Error('Failed to post comment');
+      }
+
+      const commentsList = postCard.querySelector('.comments-list');
+      
+      // If the "no comments" message is showing, remove it
+      if (commentsList.querySelector('.muted')) {
+        commentsList.innerHTML = '';
+      }
+
+      const el = document.createElement('div');
+      el.className = 'comment-card';
+      el.innerHTML = `
+        <img class="avatar" src="${newComment.author.photoUrl || getAvatarPlaceholder(newComment.author.name)}" alt="${newComment.author.name}">
+        <div class="comment-content">
+          <div class="comment-author">${escapeHtml(newComment.author.name)}</div>
+          <div class="comment-text">${escapeHtml(newComment.text)}</div>
+        </div>
+      `;
+      commentsList.appendChild(el);
+      input.value = '';
+      showToast('Вашият коментар беше публикуван.');
+
+    } catch (error) {
+      console.error('Failed to submit comment:', error);
+      showToast('Неуспешно изпращане на коментар.');
+    }
   }
 
   function filterByCategory(categoryKey) {
@@ -769,7 +905,18 @@ function getAuthHeaders() {
         <div class="post-text">${escapeHtml(String(p.postText || ''))}</div>
         <div class="post-media"></div>
         <div class="post-meta">${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</div>
+        <div class="post-actions">
+          <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
+        </div>
+        <div class="comments-section hidden">
+          <div class="comments-list"></div>
+          <form class="comment-form">
+            <input type="text" class="comment-input" placeholder="Напиши коментар...">
+            <button type="submit" class="btn btn-sm">Публикувай</button>
+          </form>
+        </div>
       `;
+      el.setAttribute('data-post-id', p.id);
       const fileName = (p.videoUrl || p.videoLink || '').toString().trim();
       if (fileName) {
         attachSignedVideoToCard(el.querySelector('.post-media'), fileName).catch(err => {
