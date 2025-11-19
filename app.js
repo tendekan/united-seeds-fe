@@ -721,7 +721,12 @@ function getAuthHeaders() {
       el.className = 'comment-card';
       el.setAttribute('data-comment-id', comment.id);
       const authorName = comment.authorName || comment.userName || 'Потребител';
-      const isOwner = authState && (String(comment.userId) === String(authState.userId));
+      // Check if current user owns this comment - compare both userId and userName
+      const isOwner = authState && (
+        (comment.userId && String(comment.userId) === String(authState.userId)) ||
+        (comment.userName && comment.userName === authState.name) ||
+        (comment.authorName && comment.authorName === authState.name)
+      );
       
       el.innerHTML = `
         <div class="comment-content">
@@ -862,14 +867,15 @@ function getAuthHeaders() {
       }
       const respData = await resp.json();
 
-      // Optimistically render the new comment with the author's name from the auth state.
+      // Ensure the response includes userId for ownership checks
       const newCommentForRender = { 
-        ...respData, 
-        authorName: authState.name 
+        ...respData,
+        userId: respData.userId || userId,
+        authorName: authState.name,
+        userName: authState.name
       };
 
       const commentsList = postCard.querySelector('.comments-list');
-      const postId = postCard.dataset.postId;
       
       // Reset to first page and reload comments
       if (!commentPaginationState[postId]) {
