@@ -151,6 +151,10 @@ function getAuthHeaders() {
   const postSubcategory = document.getElementById('post-subcategory');
   const toast = document.getElementById('toast');
   const globalSpinner = document.getElementById('global-spinner');
+  const likesModal = document.getElementById('likes-modal');
+  const likesModalClose = document.getElementById('likes-modal-close');
+  const likesModalTitle = document.getElementById('likes-modal-title');
+  const likesModalBody = document.getElementById('likes-modal-body');
 
   // ---------- Initialization ----------
   function init() {
@@ -195,6 +199,20 @@ function getAuthHeaders() {
     if (postLikeBtn) {
       e.preventDefault();
       await onPostLikeClick(postLikeBtn);
+      return;
+    }
+
+    const viewPostLikesBtn = e.target.closest('.btn-view-post-likes');
+    if (viewPostLikesBtn) {
+      e.preventDefault();
+      await showPostLikesModal(viewPostLikesBtn.dataset.postId);
+      return;
+    }
+
+    const viewCommentLikesBtn = e.target.closest('.btn-view-comment-likes');
+    if (viewCommentLikesBtn) {
+      e.preventDefault();
+      await showCommentLikesModal(viewCommentLikesBtn.dataset.commentId);
       return;
     }
 
@@ -244,6 +262,11 @@ function getAuthHeaders() {
     if (authModal) authModal.addEventListener('click', (e) => {
       const target = e.target;
       if (target && target.getAttribute && target.getAttribute('data-close') === 'true') closeAuthModal();
+    });
+    if (likesModalClose) likesModalClose.addEventListener('click', closeLikesModal);
+    if (likesModal) likesModal.addEventListener('click', (e) => {
+      const target = e.target;
+      if (target && target.getAttribute && target.getAttribute('data-close') === 'true') closeLikesModal();
     });
     if (btnSignout) {
       btnSignout.addEventListener('click', signOut);
@@ -485,7 +508,54 @@ function getAuthHeaders() {
 
   function closeAuthModal() {
     authModal.classList.add('hidden');
-    document.body.style.overflow = '';
+    maybeUnlockBodyScroll();
+  }
+
+  function openLikesModal(title) {
+    if (!likesModal) return;
+    if (likesModalTitle && title) {
+      likesModalTitle.textContent = title;
+    }
+    likesModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLikesModal() {
+    if (!likesModal) return;
+    likesModal.classList.add('hidden');
+    maybeUnlockBodyScroll();
+  }
+
+  function maybeUnlockBodyScroll() {
+    const authHidden = !authModal || authModal.classList.contains('hidden');
+    const likesHidden = !likesModal || likesModal.classList.contains('hidden');
+    if (authHidden && likesHidden) {
+      document.body.style.overflow = '';
+    }
+  }
+
+  function setLikesModalContent(html) {
+    if (!likesModalBody) return;
+    likesModalBody.innerHTML = html;
+  }
+
+  function renderLikesModalList(items) {
+    if (!likesModalBody) return;
+    if (!items || !items.length) {
+      likesModalBody.innerHTML = '<div class="like-empty">Все още няма харесвания.</div>';
+      return;
+    }
+    const safeItems = items.map(item => {
+      const name = (item?.userName || '').trim() || `Потребител${item?.userId ? ' #' + item.userId : ''}`;
+      const initial = name.trim()[0]?.toUpperCase() || '•';
+      return { name, initial };
+    });
+    likesModalBody.innerHTML = safeItems.map(item => `
+      <div class="like-user">
+        <div class="like-initial">${escapeHtml(item.initial)}</div>
+        <div class="like-name">${escapeHtml(item.name)}</div>
+      </div>
+    `).join('');
   }
 
   // ---------- Auth UI ----------
@@ -727,6 +797,9 @@ function getAuthHeaders() {
             <span class="like-label">Харесай</span>
             <span class="like-count" data-like-count>0</span>
           </button>
+          <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
+            Кой хареса?
+          </button>
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
         <div class="comments-section hidden">
@@ -853,11 +926,16 @@ function getAuthHeaders() {
           </div>
           <div class="comment-text" data-comment-text="${comment.id}">${escapeHtml(comment.commentText)}</div>
           <div class="comment-footer">
-            <button class="btn-link btn-like-comment" data-comment-id="${comment.id}" ${commentLikeAttrs}>
-              <span class="like-heart" aria-hidden="true">♡</span>
-              <span class="like-label">Харесай</span>
-              <span class="like-count" data-like-count>0</span>
-            </button>
+            <div class="comment-footer-actions">
+              <button class="btn-link btn-like-comment" data-comment-id="${comment.id}" ${commentLikeAttrs}>
+                <span class="like-heart" aria-hidden="true">♡</span>
+                <span class="like-label">Харесай</span>
+                <span class="like-count" data-like-count>0</span>
+              </button>
+              <button class="btn-link btn-view-comment-likes" data-comment-id="${comment.id}" ${commentLikeAttrs}>
+                Кой хареса?
+              </button>
+            </div>
             <div class="comment-meta">${comment.createdAt ? new Date(comment.createdAt).toLocaleString('bg-BG') : ''}</div>
           </div>
         </div>
@@ -1084,6 +1162,38 @@ function getAuthHeaders() {
     return { count, liked };
   }
 
+  async function showPostLikesModal(postId) {
+    if (!canUseBackendId(postId)) {
+      showToast('Харесванията са налични само за публикации от сървъра.');
+      return;
+    }
+    openLikesModal('Хора, които харесаха публикацията');
+    setLikesModalContent('<div class="muted small">Зарежда се...</div>');
+    try {
+      const likes = await fetchPostLikes(postId);
+      renderLikesModalList(likes);
+    } catch (error) {
+      console.error('Failed to load post likes', error);
+      setLikesModalContent('<div class="like-empty">Неуспешно зареждане на харесванията.</div>');
+    }
+  }
+
+  async function showCommentLikesModal(commentId) {
+    if (!canUseBackendId(commentId)) {
+      showToast('Харесванията са налични само за коментари от сървъра.');
+      return;
+    }
+    openLikesModal('Хора, които харесаха коментара');
+    setLikesModalContent('<div class="muted small">Зарежда се...</div>');
+    try {
+      const likes = await fetchCommentLikes(commentId);
+      renderLikesModalList(likes);
+    } catch (error) {
+      console.error('Failed to load comment likes', error);
+      setLikesModalContent('<div class="like-empty">Неуспешно зареждане на харесванията.</div>');
+    }
+  }
+
   async function fetchPostLikesCount(postId) {
     const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes/count`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
@@ -1100,6 +1210,24 @@ function getAuthHeaders() {
     if (!resp.ok) throw new Error('Failed to fetch comment like count');
     const data = await resp.json();
     return Number(data) || 0;
+  }
+
+  async function fetchPostLikes(postId) {
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch post likes');
+    const data = await resp.json();
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function fetchCommentLikes(commentId) {
+    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch comment likes');
+    const data = await resp.json();
+    return Array.isArray(data) ? data : [];
   }
 
   async function hasUserLikedPost(postId) {
@@ -1525,6 +1653,9 @@ function getAuthHeaders() {
             <span class="like-heart" aria-hidden="true">♡</span>
             <span class="like-label">Харесай</span>
             <span class="like-count" data-like-count>0</span>
+          </button>
+          <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
+            Кой хареса?
           </button>
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>

@@ -243,6 +243,18 @@
         </div>
     </div>
 
+    <!-- Likes Modal -->
+    <div id="likes-modal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="modal-backdrop" data-close="true"></div>
+        <div class="modal-dialog likes-modal-dialog" role="document">
+            <button class="modal-close" id="likes-modal-close" aria-label="Затвори">×</button>
+            <h3 id="likes-modal-title">Харесвания</h3>
+            <div id="likes-modal-body" class="likes-modal-body">
+                <div class="muted small">Зарежда се...</div>
+            </div>
+        </div>
+    </div>
+
     <style>
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
@@ -255,4 +267,3 @@
     <script src="./app.js"></script>
 </body>
 </html>
-
