@@ -157,6 +157,34 @@ function getAuthHeaders() {
       await handleDeleteComment(commentId);
     }
   });
+
+  postsList.addEventListener('change', async (e) => {
+    const select = e.target.closest('.comment-sort');
+    if (select) {
+      const postCard = select.closest('.post-card');
+      if (!postCard) return;
+      const postId = postCard.dataset.postId;
+      const newOrder = select.value === 'asc' ? 'asc' : 'desc';
+      commentSortOrder[postId] = newOrder;
+      if (!commentPaginationState[postId]) {
+        commentPaginationState[postId] = { currentPage: 1, totalPages: 1, totalComments: 0 };
+      } else {
+        commentPaginationState[postId].currentPage = 1;
+      }
+      const commentsList = postCard.querySelector('.comments-list');
+      commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
+      try {
+        const state = commentPaginationState[postId];
+        const data = await fetchComments(postId, state.currentPage, 5, newOrder);
+        state.totalPages = data.totalPages;
+        state.totalComments = data.total;
+        renderComments(data.comments, commentsList, postId, state);
+      } catch (error) {
+        console.error('Failed to change sort order:', error);
+        commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
+      }
+    }
+  });
   }
 
 
@@ -463,8 +491,9 @@ function getAuthHeaders() {
   const POSTS_KEY = 'unitedseeds.posts';
   let posts = loadFromStorage(POSTS_KEY, []);
   
-  // ---------- Comments Pagination State ----------
+  // ---------- Comments Pagination & Sort State ----------
   const commentPaginationState = {}; // { postId: { currentPage: 1, totalPages: 1, totalComments: 0 } }
+  const commentSortOrder = {}; // { postId: 'desc' | 'asc' }
 
   async function onCreatePost() {
     if (!authState) { openAuthModal('Влез'); return; }
@@ -647,6 +676,15 @@ function getAuthHeaders() {
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
         <div class="comments-section hidden">
+          <div class="comments-controls">
+            <label>
+              <span>Подреди:</span>
+              <select class="comment-sort">
+                <option value="desc">Най-нови първо</option>
+                <option value="asc">Най-стари първо</option>
+              </select>
+            </label>
+          </div>
           <div class="comments-list"></div>
           <form class="comment-form">
             <input type="text" class="comment-input" placeholder="Напиши коментар...">
@@ -673,11 +711,19 @@ function getAuthHeaders() {
       if (!commentPaginationState[postId]) {
         commentPaginationState[postId] = { currentPage: 1, totalPages: 1, totalComments: 0 };
       }
+      if (!commentSortOrder[postId]) {
+        commentSortOrder[postId] = 'desc';
+      }
+      const sortSelect = commentsSection.querySelector('.comment-sort');
+      if (sortSelect) {
+        sortSelect.value = commentSortOrder[postId];
+      }
       // Always reload comments when opening
       commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
       try {
         const state = commentPaginationState[postId];
-        const data = await fetchComments(postId, state.currentPage, 5);
+        const sortOrder = commentSortOrder[postId] || 'desc';
+        const data = await fetchComments(postId, state.currentPage, 5, sortOrder);
         state.totalPages = data.totalPages;
         state.totalComments = data.total;
         renderComments(data.comments, commentsList, postId, state);
@@ -688,8 +734,8 @@ function getAuthHeaders() {
     }
   }
 
-  async function fetchComments(postId, page = 1, size = 5) {
-    const url = `${BACKEND_URL}/posts/${postId}/comments?page=${page}&size=${size}`;
+  async function fetchComments(postId, page = 1, size = 5, sortOrder = 'desc') {
+    const url = `${BACKEND_URL}/posts/${postId}/comments?page=${page}&size=${size}&sortOrder=${sortOrder}`;
     const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
     if (!resp.ok) throw new Error('Failed to fetch comments');
     const data = await resp.json();
@@ -794,7 +840,8 @@ function getAuthHeaders() {
         const commentsList = commentsSection.querySelector('.comments-list');
         commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
         try {
-          const data = await fetchComments(postId, paginationState.currentPage, 5);
+          const sortOrder = commentSortOrder[postId] || 'desc';
+          const data = await fetchComments(postId, paginationState.currentPage, 5, sortOrder);
           paginationState.totalPages = data.totalPages;
           paginationState.totalComments = data.total;
           renderComments(data.comments, commentsList, postId, paginationState);
@@ -811,7 +858,8 @@ function getAuthHeaders() {
         const commentsList = commentsSection.querySelector('.comments-list');
         commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
         try {
-          const data = await fetchComments(postId, paginationState.currentPage, 5);
+          const sortOrder = commentSortOrder[postId] || 'desc';
+          const data = await fetchComments(postId, paginationState.currentPage, 5, sortOrder);
           paginationState.totalPages = data.totalPages;
           paginationState.totalComments = data.total;
           renderComments(data.comments, commentsList, postId, paginationState);
@@ -895,7 +943,8 @@ function getAuthHeaders() {
       commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
       try {
         const state = commentPaginationState[postId];
-        const data = await fetchComments(postId, state.currentPage, 5);
+        const sortOrder = commentSortOrder[postId] || 'desc';
+        const data = await fetchComments(postId, state.currentPage, 5, sortOrder);
         state.totalPages = data.totalPages;
         state.totalComments = data.total;
         renderComments(data.comments, commentsList, postId, state);
@@ -996,7 +1045,8 @@ function getAuthHeaders() {
         // Reload comments
         commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
         const state = commentPaginationState[postId] || { currentPage: 1, totalPages: 1, totalComments: 0 };
-        const data = await fetchComments(postId, state.currentPage, 5);
+        const sortOrder = commentSortOrder[postId] || 'desc';
+        const data = await fetchComments(postId, state.currentPage, 5, sortOrder);
         state.totalPages = data.totalPages;
         state.totalComments = data.total;
         renderComments(data.comments, commentsList, postId, state);
@@ -1176,6 +1226,15 @@ function getAuthHeaders() {
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
         <div class="comments-section hidden">
+          <div class="comments-controls">
+            <label>
+              <span>Подреди:</span>
+              <select class="comment-sort">
+                <option value="desc">Най-нови първо</option>
+                <option value="asc">Най-стари първо</option>
+              </select>
+            </label>
+          </div>
           <div class="comments-list"></div>
           <form class="comment-form">
             <input type="text" class="comment-input" placeholder="Напиши коментар...">

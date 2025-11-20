@@ -333,6 +333,30 @@ body { background-size: 200% 200%; animation: bgShift 30s ease infinite; }
   padding: 8px 12px;
 }
 
+.comments-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.comments-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.comment-sort {
+  border-radius: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 12px;
+}
+
 .comment-header {
   display: flex;
   justify-content: space-between;
