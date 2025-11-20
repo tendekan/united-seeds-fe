@@ -657,6 +657,11 @@ function getAuthHeaders() {
   function renderPosts() {
     if (!postsList) return;
     postsList.innerHTML = '';
+
+    if (!posts.length) {
+      postsList.innerHTML = '<div class="muted">Все още няма публикации. Започнете, като създадете първата си публикация.</div>';
+    }
+
     const frag = document.createDocumentFragment();
     posts.forEach(p => {
       const el = document.createElement('div');
@@ -696,6 +701,7 @@ function getAuthHeaders() {
       frag.appendChild(el);
     });
     postsList.appendChild(frag);
+    if (postsPagination) postsPagination.classList.add('hidden');
   }
 
   async function toggleComments(button) {
