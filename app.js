@@ -63,9 +63,33 @@ function getAuthHeaders() {
     return `$${n.toFixed(2)}`;
   }
 
+  function getSafeUserId() {
+    if (!authState) return null;
+    let raw = authState.userId ?? Math.floor(Math.random() * 1000000);
+    let str = String(raw).replace(/\D/g, '');
+    if (!str) {
+      str = String(Math.floor(Math.random() * 1000000));
+    }
+    if (str.length > 18) {
+      str = str.slice(-18);
+    }
+    return str;
+  }
+
+  function canUseBackendId(id) {
+    return /^[0-9]+$/.test(String(id || '').trim());
+  }
+
   // ---------- App State ----------
   let authState = loadFromStorage(STORAGE_KEYS.auth, null);
   let skills = loadFromStorage(STORAGE_KEYS.skills, []);
+  const postLikeState = {};
+  const commentLikeState = {};
+
+  function resetLikeCaches() {
+    Object.keys(postLikeState).forEach(key => delete postLikeState[key]);
+    Object.keys(commentLikeState).forEach(key => delete commentLikeState[key]);
+  }
 
   // ---------- DOM Elements ----------
   const yearEl = document.getElementById('year');
@@ -145,16 +169,39 @@ function getAuthHeaders() {
   initGoogle();
   initFacebook();
   postsList.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('btn-toggle-comments')) {
-      toggleComments(e.target);
-    } else if (e.target.classList.contains('btn-edit-comment')) {
+    const toggleBtn = e.target.closest('.btn-toggle-comments');
+    if (toggleBtn) {
+      toggleComments(toggleBtn);
+      return;
+    }
+
+    const editBtn = e.target.closest('.btn-edit-comment');
+    if (editBtn) {
       e.preventDefault();
-      const commentId = e.target.getAttribute('data-comment-id');
+      const commentId = editBtn.getAttribute('data-comment-id');
       await handleEditComment(commentId);
-    } else if (e.target.classList.contains('btn-delete-comment')) {
+      return;
+    }
+
+    const deleteBtn = e.target.closest('.btn-delete-comment');
+    if (deleteBtn) {
       e.preventDefault();
-      const commentId = e.target.getAttribute('data-comment-id');
+      const commentId = deleteBtn.getAttribute('data-comment-id');
       await handleDeleteComment(commentId);
+      return;
+    }
+
+    const postLikeBtn = e.target.closest('.btn-like-post');
+    if (postLikeBtn) {
+      e.preventDefault();
+      await onPostLikeClick(postLikeBtn);
+      return;
+    }
+
+    const commentLikeBtn = e.target.closest('.btn-like-comment');
+    if (commentLikeBtn) {
+      e.preventDefault();
+      await onCommentLikeClick(commentLikeBtn);
     }
   });
 
@@ -540,16 +587,11 @@ function getAuthHeaders() {
         }
       }
 
+      const safeUserId = getSafeUserId();
       const payload = {
-  id: twoDigit(Math.floor(Date.now() / 1000)),
-  // Shorten userId to fit Java long (max 19 digits, signed)
-  userId: (() => {
-    let raw = authState.userId ?? Math.floor(Math.random() * 1000000);
-    let str = String(raw).replace(/\D/g, ''); // digits only
-    if (str.length > 18) str = str.slice(-18); // keep last 18 digits
-    return str;
-  })(),
-  facebookName: authState.name || '',
+        id: twoDigit(Math.floor(Date.now() / 1000)),
+        userId: safeUserId ? Number(safeUserId) : undefined,
+        facebookName: authState.name || '',
         category: categoryLabel || '',
         subcategory: newLocalPost.subcategory || '',
         // Send only the returned full name of the uploaded video as requested
@@ -666,6 +708,8 @@ function getAuthHeaders() {
     posts.forEach(p => {
       const el = document.createElement('div');
       el.className = 'post-card';
+      const canLike = canUseBackendId(p.id);
+      const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
       el.innerHTML = `
         <div class="post-header">
           <img class="avatar" src="${p.author.photoUrl || getAvatarPlaceholder(p.author.name)}" alt="${p.author.name}">
@@ -678,6 +722,11 @@ function getAuthHeaders() {
         ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
         ${p.videoName ? `<div class="post-meta">Attached video: ${escapeHtml(p.videoName)}</div>` : ''}
         <div class="post-actions">
+          <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
+            <span class="like-heart" aria-hidden="true">♡</span>
+            <span class="like-label">Харесай</span>
+            <span class="like-count" data-like-count>0</span>
+          </button>
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
         <div class="comments-section hidden">
@@ -702,6 +751,7 @@ function getAuthHeaders() {
     });
     postsList.appendChild(frag);
     if (postsPagination) postsPagination.classList.add('hidden');
+    initializePostLikeButtons(postsList);
   }
 
   async function toggleComments(button) {
@@ -787,6 +837,8 @@ function getAuthHeaders() {
         (comment.userName && comment.userName === authState.name) ||
         (comment.authorName && comment.authorName === authState.name)
       );
+      const canLikeComment = canUseBackendId(comment.id);
+      const commentLikeAttrs = canLikeComment ? '' : 'disabled title="Коментарът не е синхронизиран."';
       
       el.innerHTML = `
         <div class="comment-content">
@@ -800,12 +852,20 @@ function getAuthHeaders() {
             ` : ''}
           </div>
           <div class="comment-text" data-comment-text="${comment.id}">${escapeHtml(comment.commentText)}</div>
-          <div class="comment-meta">${comment.createdAt ? new Date(comment.createdAt).toLocaleString('bg-BG') : ''}</div>
+          <div class="comment-footer">
+            <button class="btn-link btn-like-comment" data-comment-id="${comment.id}" ${commentLikeAttrs}>
+              <span class="like-heart" aria-hidden="true">♡</span>
+              <span class="like-label">Харесай</span>
+              <span class="like-count" data-like-count>0</span>
+            </button>
+            <div class="comment-meta">${comment.createdAt ? new Date(comment.createdAt).toLocaleString('bg-BG') : ''}</div>
+          </div>
         </div>
       `;
       frag.appendChild(el);
     });
     commentsListEl.appendChild(frag);
+    initializeCommentLikeButtons(commentsListEl);
     
     // Render pagination if needed
     if (paginationState && paginationState.totalPages > 1) {
@@ -877,6 +937,241 @@ function getAuthHeaders() {
     });
   }
 
+  // ---------- Likes (Posts & Comments) ----------
+  function initializePostLikeButtons(root) {
+    if (!root) return;
+    const buttons = root.querySelectorAll('.btn-like-post');
+    buttons.forEach(btn => hydratePostLikeButton(btn));
+  }
+
+  function initializeCommentLikeButtons(root) {
+    if (!root) return;
+    const buttons = root.querySelectorAll('.btn-like-comment');
+    buttons.forEach(btn => hydrateCommentLikeButton(btn));
+  }
+
+  async function hydratePostLikeButton(button) {
+    if (!button) return;
+    const postId = button.dataset.postId;
+    if (!canUseBackendId(postId)) {
+      applyPostLikeStateToButton(button, postLikeState[postId] || { count: 0, liked: false });
+      return;
+    }
+    try {
+      const state = await fetchPostLikeState(postId);
+      postLikeState[postId] = state;
+      applyPostLikeStateToButton(button, state);
+    } catch (error) {
+      console.error('Failed to hydrate post likes:', error);
+    }
+  }
+
+  async function hydrateCommentLikeButton(button) {
+    if (!button) return;
+    const commentId = button.dataset.commentId;
+    if (!canUseBackendId(commentId)) {
+      applyCommentLikeStateToButton(button, commentLikeState[commentId] || { count: 0, liked: false });
+      return;
+    }
+    try {
+      const state = await fetchCommentLikeState(commentId);
+      commentLikeState[commentId] = state;
+      applyCommentLikeStateToButton(button, state);
+    } catch (error) {
+      console.error('Failed to hydrate comment likes:', error);
+    }
+  }
+
+  async function refreshPostLikeButton(postId, button) {
+    if (!button || !canUseBackendId(postId)) return;
+    const state = await fetchPostLikeState(postId);
+    postLikeState[postId] = state;
+    applyPostLikeStateToButton(button, state);
+  }
+
+  async function refreshCommentLikeButton(commentId, button) {
+    if (!button || !canUseBackendId(commentId)) return;
+    const state = await fetchCommentLikeState(commentId);
+    commentLikeState[commentId] = state;
+    applyCommentLikeStateToButton(button, state);
+  }
+
+  function applyPostLikeStateToButton(button, state = { count: 0, liked: false }) {
+    updateLikeButtonVisual(button, state);
+  }
+
+  function applyCommentLikeStateToButton(button, state = { count: 0, liked: false }) {
+    updateLikeButtonVisual(button, state);
+  }
+
+  function updateLikeButtonVisual(button, state) {
+    if (!button) return;
+    const countEl = button.querySelector('[data-like-count]');
+    const labelEl = button.querySelector('.like-label');
+    const count = Number(state?.count) || 0;
+    if (countEl) countEl.textContent = String(count);
+    if (labelEl) labelEl.textContent = state?.liked ? 'Харесано' : 'Харесай';
+    button.classList.toggle('is-liked', Boolean(state?.liked));
+  }
+
+  async function onPostLikeClick(button) {
+    if (!button) return;
+    const postId = button.dataset.postId;
+    if (!canUseBackendId(postId)) {
+      showToast('Тази публикация все още не може да бъде харесана.');
+      return;
+    }
+    if (!authState) {
+      openAuthModal('Влез');
+      return;
+    }
+    button.disabled = true;
+    try {
+      const currentlyLiked = postLikeState[postId]?.liked;
+      if (currentlyLiked) {
+        await unlikePost(postId);
+      } else {
+        await likePost(postId);
+      }
+      await refreshPostLikeButton(postId, button);
+    } catch (error) {
+      console.error('Failed to toggle post like:', error);
+      showToast('Неуспешно обновяване на харесването.');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function onCommentLikeClick(button) {
+    if (!button) return;
+    const commentId = button.dataset.commentId;
+    if (!canUseBackendId(commentId)) {
+      showToast('Този коментар не е наличен за харесване.');
+      return;
+    }
+    if (!authState) {
+      openAuthModal('Влез');
+      return;
+    }
+    button.disabled = true;
+    try {
+      const currentlyLiked = commentLikeState[commentId]?.liked;
+      if (currentlyLiked) {
+        await unlikeComment(commentId);
+      } else {
+        await likeComment(commentId);
+      }
+      await refreshCommentLikeButton(commentId, button);
+    } catch (error) {
+      console.error('Failed to toggle comment like:', error);
+      showToast('Неуспешно обновяване на харесването.');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function fetchPostLikeState(postId) {
+    const countPromise = fetchPostLikesCount(postId);
+    const likedPromise = authState ? hasUserLikedPost(postId) : Promise.resolve(false);
+    const [count, liked] = await Promise.all([countPromise, likedPromise]);
+    return { count, liked };
+  }
+
+  async function fetchCommentLikeState(commentId) {
+    const countPromise = fetchCommentLikesCount(commentId);
+    const likedPromise = authState ? hasUserLikedComment(commentId) : Promise.resolve(false);
+    const [count, liked] = await Promise.all([countPromise, likedPromise]);
+    return { count, liked };
+  }
+
+  async function fetchPostLikesCount(postId) {
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes/count`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch post like count');
+    const data = await resp.json();
+    return Number(data) || 0;
+  }
+
+  async function fetchCommentLikesCount(commentId) {
+    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes/count`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch comment like count');
+    const data = await resp.json();
+    return Number(data) || 0;
+  }
+
+  async function hasUserLikedPost(postId) {
+    const userId = getSafeUserId();
+    if (!userId) return false;
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes/user/${userId}`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to check post like');
+    return Boolean(await resp.json());
+  }
+
+  async function hasUserLikedComment(commentId) {
+    const userId = getSafeUserId();
+    if (!userId) return false;
+    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes/user/${userId}`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to check comment like');
+    return Boolean(await resp.json());
+  }
+
+  async function likePost(postId) {
+    const userId = getSafeUserId();
+    if (!userId) throw new Error('Missing user id');
+    const params = new URLSearchParams({
+      userId: userId,
+      userName: authState?.name || 'Потребител'
+    });
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes?${params.toString()}`, {
+      method: 'POST',
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to like post');
+  }
+
+  async function unlikePost(postId) {
+    const userId = getSafeUserId();
+    if (!userId) throw new Error('Missing user id');
+    const params = new URLSearchParams({ userId: userId });
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes?${params.toString()}`, {
+      method: 'DELETE',
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to unlike post');
+  }
+
+  async function likeComment(commentId) {
+    const userId = getSafeUserId();
+    if (!userId) throw new Error('Missing user id');
+    const params = new URLSearchParams({
+      userId: userId,
+      userName: authState?.name || 'Потребител'
+    });
+    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes?${params.toString()}`, {
+      method: 'POST',
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to like comment');
+  }
+
+  async function unlikeComment(commentId) {
+    const userId = getSafeUserId();
+    if (!userId) throw new Error('Missing user id');
+    const params = new URLSearchParams({ userId: userId });
+    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes?${params.toString()}`, {
+      method: 'DELETE',
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to unlike comment');
+  }
+
   postsList.addEventListener('submit', (e) => {
     const form = e.target.closest('.comment-form');
     if (form) {
@@ -900,12 +1195,7 @@ function getAuthHeaders() {
 
     try {
       const url = `${BACKEND_URL}/comments`;
-      const userId = (() => {
-        let raw = authState.userId ?? Math.floor(Math.random() * 1000000);
-        let str = String(raw).replace(/\D/g, ''); // digits only
-        if (str.length > 18) str = str.slice(-18); // keep last 18 digits
-        return str;
-      })();
+      const userId = getSafeUserId();
 
       const payload = {
         postId: Number(postId),
@@ -1218,6 +1508,8 @@ function getAuthHeaders() {
     items.forEach(p => {
       const el = document.createElement('div');
       el.className = 'post-card';
+      const canLike = canUseBackendId(p.id);
+      const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
       el.innerHTML = `
         <div class="post-header">
           <div>
@@ -1229,6 +1521,11 @@ function getAuthHeaders() {
         <div class="post-media"></div>
         <div class="post-meta">${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</div>
         <div class="post-actions">
+          <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
+            <span class="like-heart" aria-hidden="true">♡</span>
+            <span class="like-label">Харесай</span>
+            <span class="like-count" data-like-count>0</span>
+          </button>
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
         <div class="comments-section hidden">
@@ -1259,6 +1556,7 @@ function getAuthHeaders() {
       frag.appendChild(el);
     });
     postsList.appendChild(frag);
+    initializePostLikeButtons(postsList);
   }
 
   async function requestSignedDownloadUrl(fileName) {
@@ -1360,6 +1658,7 @@ function getAuthHeaders() {
   function signOut() {
     authState = null;
     saveToStorage(STORAGE_KEYS.auth, authState);
+    resetLikeCaches();
     renderAuthUI();
   }
 
@@ -1614,11 +1913,10 @@ function getAuthHeaders() {
   function signInWithProfile(profile) {
     authState = profile;
     saveToStorage(STORAGE_KEYS.auth, authState);
+    resetLikeCaches();
     renderAuthUI();
   }
 
   // ---------- Boot ----------
   document.addEventListener('DOMContentLoaded', init);
 })();
-
-
