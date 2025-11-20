@@ -324,7 +324,10 @@ body { background-size: 200% 200%; animation: bgShift 30s ease infinite; }
 .btn-view-comment-likes {
   font-size: 12px;
   color: var(--muted);
-  text-decoration: underline;
+  text-decoration: none;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .btn-view-post-likes[disabled],
@@ -334,12 +337,16 @@ body { background-size: 200% 200%; animation: bgShift 30s ease infinite; }
   cursor: not-allowed;
 }
 
-.btn-view-post-likes .like-count,
-.btn-view-comment-likes .like-count {
-  font-weight: 600;
-  min-width: 10px;
-  display: inline-block;
-  text-align: center;
+.like-count-badge {
+  display: inline-flex;
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(56,142,60,0.15);
+  color: var(--primary-700);
+  font-weight: 700;
+  justify-content: center;
+  align-items: center;
 }
 
 .btn-sm {

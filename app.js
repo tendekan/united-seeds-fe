@@ -63,6 +63,12 @@ function getAuthHeaders() {
     return `$${n.toFixed(2)}`;
   }
 
+  function buildLikesLabel(count) {
+    const safeCount = Number(count) || 0;
+    const noun = safeCount === 1 ? 'човек' : 'човека';
+    return `Харесано от <span class="like-count-badge">${safeCount}</span> ${noun}`;
+  }
+
   function getSafeUserId() {
     if (!authState) return null;
     let raw = authState.userId ?? Math.floor(Math.random() * 1000000);
@@ -797,7 +803,7 @@ function getAuthHeaders() {
             <span class="like-label">Харесай</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
-            Liked by <span class="like-count" data-like-count>0</span> people
+            ${buildLikesLabel(0)}
           </button>
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
@@ -931,7 +937,7 @@ function getAuthHeaders() {
                 <span class="like-label">Харесай</span>
               </button>
               <button class="btn-link btn-view-comment-likes" data-comment-id="${comment.id}" ${commentLikeAttrs}>
-                Liked by <span class="like-count" data-like-count>0</span> people
+                ${buildLikesLabel(0)}
               </button>
             </div>
             <div class="comment-meta">${comment.createdAt ? new Date(comment.createdAt).toLocaleString('bg-BG') : ''}</div>
@@ -1094,16 +1100,20 @@ function getAuthHeaders() {
     if (!postId) return;
     const card = postsList?.querySelector(`.post-card[data-post-id="${postId}"]`);
     if (!card) return;
-    const countEl = card.querySelector('.btn-view-post-likes [data-like-count]');
-    if (countEl) countEl.textContent = String(Number(count) || 0);
+    const button = card.querySelector('.btn-view-post-likes');
+    if (button) {
+      button.innerHTML = buildLikesLabel(count);
+    }
   }
 
   function updateCommentLikeCountDisplay(commentId, count) {
     if (!commentId) return;
     const card = document.querySelector(`.comment-card[data-comment-id="${commentId}"]`);
     if (!card) return;
-    const countEl = card.querySelector('.btn-view-comment-likes [data-like-count]');
-    if (countEl) countEl.textContent = String(Number(count) || 0);
+    const button = card.querySelector('.btn-view-comment-likes');
+    if (button) {
+      button.innerHTML = buildLikesLabel(count);
+    }
   }
 
   async function onPostLikeClick(button) {
@@ -1668,7 +1678,7 @@ function getAuthHeaders() {
             <span class="like-label">Харесай</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
-            Liked by <span class="like-count" data-like-count>0</span> people
+            ${buildLikesLabel(0)}
           </button>
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
