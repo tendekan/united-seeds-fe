@@ -795,10 +795,9 @@ function getAuthHeaders() {
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
             <span class="like-heart" aria-hidden="true">♡</span>
             <span class="like-label">Харесай</span>
-            <span class="like-count" data-like-count>0</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
-            Кой хареса?
+            Liked by <span class="like-count" data-like-count>0</span> people
           </button>
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
@@ -930,10 +929,9 @@ function getAuthHeaders() {
               <button class="btn-link btn-like-comment" data-comment-id="${comment.id}" ${commentLikeAttrs}>
                 <span class="like-heart" aria-hidden="true">♡</span>
                 <span class="like-label">Харесай</span>
-                <span class="like-count" data-like-count>0</span>
               </button>
               <button class="btn-link btn-view-comment-likes" data-comment-id="${comment.id}" ${commentLikeAttrs}>
-                Кой хареса?
+                Liked by <span class="like-count" data-like-count>0</span> people
               </button>
             </div>
             <div class="comment-meta">${comment.createdAt ? new Date(comment.createdAt).toLocaleString('bg-BG') : ''}</div>
@@ -1076,20 +1074,36 @@ function getAuthHeaders() {
 
   function applyPostLikeStateToButton(button, state = { count: 0, liked: false }) {
     updateLikeButtonVisual(button, state);
+    updatePostLikeCountDisplay(button.dataset.postId, state.count);
   }
 
   function applyCommentLikeStateToButton(button, state = { count: 0, liked: false }) {
     updateLikeButtonVisual(button, state);
+    updateCommentLikeCountDisplay(button.dataset.commentId, state.count);
   }
 
   function updateLikeButtonVisual(button, state) {
     if (!button) return;
-    const countEl = button.querySelector('[data-like-count]');
     const labelEl = button.querySelector('.like-label');
     const count = Number(state?.count) || 0;
-    if (countEl) countEl.textContent = String(count);
     if (labelEl) labelEl.textContent = state?.liked ? 'Харесано' : 'Харесай';
     button.classList.toggle('is-liked', Boolean(state?.liked));
+  }
+
+  function updatePostLikeCountDisplay(postId, count) {
+    if (!postId) return;
+    const card = postsList?.querySelector(`.post-card[data-post-id="${postId}"]`);
+    if (!card) return;
+    const countEl = card.querySelector('.btn-view-post-likes [data-like-count]');
+    if (countEl) countEl.textContent = String(Number(count) || 0);
+  }
+
+  function updateCommentLikeCountDisplay(commentId, count) {
+    if (!commentId) return;
+    const card = document.querySelector(`.comment-card[data-comment-id="${commentId}"]`);
+    if (!card) return;
+    const countEl = card.querySelector('.btn-view-comment-likes [data-like-count]');
+    if (countEl) countEl.textContent = String(Number(count) || 0);
   }
 
   async function onPostLikeClick(button) {
@@ -1652,10 +1666,9 @@ function getAuthHeaders() {
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
             <span class="like-heart" aria-hidden="true">♡</span>
             <span class="like-label">Харесай</span>
-            <span class="like-count" data-like-count>0</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
-            Кой хареса?
+            Liked by <span class="like-count" data-like-count>0</span> people
           </button>
           <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
         </div>
