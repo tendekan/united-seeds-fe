@@ -101,6 +101,7 @@ function getAuthHeaders() {
   const postCommentCountState = {};
   const postRetweetState = {};
   const commentLikeState = {};
+  const postOwnerCache = {};
   const postDataCache = {};
   let activeProfileUserId = null;
   let activeProfileData = null;
