@@ -83,7 +83,7 @@ function getAuthHeaders() {
 
   function normalizeUserId(id) {
     if (id === undefined || id === null) return '';
-    return String(id).trim();
+    return String(id);
   }
 
   function updateStoredCanonicalUserId(rawId) {
@@ -101,6 +101,7 @@ function getAuthHeaders() {
   const postCommentCountState = {};
   const postRetweetState = {};
   const commentLikeState = {};
+  const postDataCache = {};
   let activeProfileUserId = null;
   let activeProfileData = null;
   let activeProfileDisplayName = '';
@@ -378,6 +379,20 @@ function getAuthHeaders() {
     if (retweetBtn) {
       event.preventDefault();
       await onRetweetButtonClick(retweetBtn);
+      return;
+    }
+
+    const editPostBtn = closestInRoot(target, '.btn-edit-post', root);
+    if (editPostBtn) {
+      event.preventDefault();
+      await onPostEditClick(editPostBtn);
+      return;
+    }
+
+    const deletePostBtn = closestInRoot(target, '.btn-delete-post', root);
+    if (deletePostBtn) {
+      event.preventDefault();
+      await onPostDeleteClick(deletePostBtn);
       return;
     }
 
@@ -667,8 +682,12 @@ function getAuthHeaders() {
     const canLike = canUseBackendId(post.id);
     const likeAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
     const retweetAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
-    const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', post.userId, 'owner-name');
+    const ownerId = normalizeUserId(post.userId);
+    rememberPostOwner(post.id, ownerId);
+    cachePostData({ ...post, userId: ownerId });
+    const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', ownerId, 'owner-name');
     const stats = buildPostStats(envelope);
+    const currentUserId = normalizeUserId(getSafeUserId());
     const retweetInfo = forceRetweetBadge || envelope.retweet
       ? `<div class="retweet-badge">${envelope.retweetedAt ? `Споделено на ${formatDateTimeSafe(envelope.retweetedAt)}` : 'Споделено'}</div>`
       : '';
@@ -676,6 +695,8 @@ function getAuthHeaders() {
     const el = document.createElement('div');
     el.className = 'post-card';
     el.setAttribute('data-post-id', post.id);
+    if (ownerId) el.dataset.ownerId = ownerId;
+    const ownerActions = canLike && ownerId && currentUserId && ownerId === currentUserId ? buildPostOwnerActions(post.id) : '';
     el.innerHTML = `
       <div class="post-header">
         <div>
@@ -687,6 +708,7 @@ function getAuthHeaders() {
       <div class="post-text">${escapeHtml(post.postText || '')}</div>
       <div class="post-media"></div>
       ${stats}
+      ${ownerActions}
       <div class="post-meta">${formatDateTimeSafe(post.createdAt)}</div>
       <div class="post-actions">
         <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${post.id}" ${likeAttrs}>
@@ -778,6 +800,16 @@ function getAuthHeaders() {
       node.textContent = formatStatsText(likes, comments, shares);
     });
     if (counts.comments !== undefined) postCommentCountState[postId] = safeCount(counts.comments);
+  }
+
+  function buildPostOwnerActions(postId) {
+    if (!canCurrentUserModifyPost(postId)) return '';
+    return `
+      <div class="post-owner-actions">
+        <button class="btn-post-action btn-edit-post" data-post-id="${postId}">✏️ Редактирай</button>
+        <button class="btn-post-action btn-delete-post" data-post-id="${postId}">🗑️ Изтрий</button>
+      </div>
+    `;
   }
 
   function safeCount(value) {
@@ -1289,17 +1321,31 @@ function getAuthHeaders() {
     }
 
     const frag = document.createDocumentFragment();
+    const currentUserId = normalizeUserId(getSafeUserId());
     posts.forEach(p => {
       const el = document.createElement('div');
       el.className = 'post-card';
       const canLike = canUseBackendId(p.id);
       const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
       const retweetButtonAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
-      const authorMarkup = buildUserProfileLabel(p.author?.name, p.author?.userId || p.author?.id, 'owner-name');
+      const ownerId = normalizeUserId(p.author?.userId || p.author?.id || authState?.userId);
+      rememberPostOwner(p.id, ownerId);
+      cachePostData({
+        id: p.id,
+        userId: ownerId,
+        category: p.category,
+        subcategory: p.subcategory,
+        postText: p.postText ?? p.text ?? '',
+        facebookName: p.author?.name || '',
+        createdAt: p.createdAt
+      });
+      if (ownerId) el.dataset.ownerId = ownerId;
+      const authorMarkup = buildUserProfileLabel(p.author?.name, ownerId, 'owner-name');
       const authorPhoto = p.author?.photoUrl || getAvatarPlaceholder(p.author?.name);
       const authorName = escapeHtml(p.author?.name || 'Потребител');
       const shareCount = safeCount(p.shareCount ?? 0);
       const stats = buildPostStats(p);
+      const ownerActions = canLike && ownerId && currentUserId && ownerId === currentUserId ? buildPostOwnerActions(p.id) : '';
       el.innerHTML = `
         <div class="post-header">
           <img class="avatar" src="${authorPhoto}" alt="${authorName}">
@@ -1312,6 +1358,7 @@ function getAuthHeaders() {
         ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
         ${p.videoName ? `<div class="post-meta">Attached video: ${escapeHtml(p.videoName)}</div>` : ''}
         ${stats}
+        ${ownerActions}
         <div class="post-actions">
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
             <span class="like-heart" aria-hidden="true">♡</span>
@@ -1980,6 +2027,60 @@ function getAuthHeaders() {
     });
   }
 
+  async function onPostEditClick(button) {
+    const postId = button?.dataset?.postId;
+    if (!postId) return;
+    if (!canCurrentUserModifyPost(postId)) {
+      showToast('Не можете да редактирате тази публикация.', 'error');
+      return;
+    }
+    try {
+      const existing = await ensurePostData(postId);
+      const currentText = existing?.postText || existing?.text || '';
+      const newText = prompt('Редактирай публикацията', currentText);
+      if (newText === null) return;
+      const trimmed = newText.trim();
+      if (!trimmed) {
+        showToast('Публикацията не може да бъде празна.', 'error');
+        return;
+      }
+      if (trimmed === currentText.trim()) return;
+      const payload = buildPostUpdatePayload(existing, { postText: trimmed });
+      const updated = await updatePostRequest(postId, payload);
+      cachePostData(updated || payload);
+      updatePostTextInDom(postId, trimmed);
+      syncLocalPostEdit(postId, trimmed);
+      showToast('Публикацията беше обновена.');
+      refreshPostContextsAfterChange();
+    } catch (error) {
+      console.error('Failed to edit post', error);
+      showToast('Неуспешно обновяване на публикацията.', 'error');
+    }
+  }
+
+  async function onPostDeleteClick(button) {
+    const postId = button?.dataset?.postId;
+    if (!postId) return;
+    if (!canCurrentUserModifyPost(postId)) {
+      showToast('Не можете да изтриете тази публикация.', 'error');
+      return;
+    }
+    if (!confirm('Сигурни ли сте, че искате да изтриете тази публикация?')) {
+      return;
+    }
+    try {
+      await deletePostRequest(postId);
+      syncLocalPostDelete(postId);
+      clearPostCaches(postId);
+      removePostCardsFromDom(postId);
+      showToast('Публикацията беше изтрита.');
+      refreshPostContextsAfterChange();
+    } catch (error) {
+      console.error('Failed to delete post', error);
+      showToast('Неуспешно изтриване на публикацията.', 'error');
+    }
+  }
+
   async function likeComment(commentId) {
     const userId = getSafeUserId();
     if (!userId) throw new Error('Missing user id');
@@ -2210,6 +2311,31 @@ function getAuthHeaders() {
     if (!resp.ok) throw new Error('Failed to delete comment');
   }
 
+  async function updatePostRequest(postId, payload) {
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}`, {
+      method: 'PUT',
+      headers: {
+        'accept': '*/*',
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error('Failed to update post');
+    return resp.json();
+  }
+
+  async function deletePostRequest(postId) {
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}`, {
+      method: 'DELETE',
+      headers: {
+        'accept': '*/*',
+        ...getAuthHeaders()
+      }
+    });
+    if (!resp.ok) throw new Error('Failed to delete post');
+  }
+
   function filterByCategory(categoryKey) {
     // Show posts section
     if (composer) composer.classList.add('hidden');
@@ -2336,15 +2462,22 @@ function getAuthHeaders() {
       return;
     }
     const frag = document.createDocumentFragment();
+    const currentUserId = normalizeUserId(getSafeUserId());
     items.forEach(p => {
       const el = document.createElement('div');
       el.className = 'post-card';
       const canLike = canUseBackendId(p.id);
       const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
       const retweetButtonAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
-      const authorMarkup = buildUserProfileLabel(p.facebookName || p.userId || 'Потребител', p.userId, 'owner-name');
+      const ownerId = normalizeUserId(p.userId);
+      rememberPostOwner(p.id, ownerId);
+      cachePostData({ ...p, userId: ownerId });
+      if (ownerId) el.dataset.ownerId = ownerId;
+      const authorMarkup = buildUserProfileLabel(p.facebookName || p.userId || 'Потребител', ownerId, 'owner-name');
+      const isOwnPost = canLike && ownerId && currentUserId && ownerId === currentUserId;
       const shareCount = safeCount(p.shareCount ?? 0);
       const stats = buildPostStats(p);
+      const ownerActions = isOwnPost ? buildPostOwnerActions(p.id) : '';
       el.innerHTML = `
         <div class="post-header">
           <div>
@@ -2355,6 +2488,7 @@ function getAuthHeaders() {
         <div class="post-text">${escapeHtml(String(p.postText || ''))}</div>
         <div class="post-media"></div>
         ${stats}
+        ${ownerActions}
         <div class="post-meta">${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</div>
         <div class="post-actions">
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
@@ -2608,13 +2742,128 @@ function getAuthHeaders() {
 
   function buildUserProfileLabel(name, userId, className = 'owner-name') {
     const safeName = escapeHtml(name || 'Потребител');
-    const rawId = userId !== undefined && userId !== null ? String(userId).trim() : '';
+    const rawId = userId !== undefined && userId !== null ? String(userId) : '';
     const normalizedId = normalizeUserId(rawId);
     if (!normalizedId) {
       return `<span class="${className}">${safeName}</span>`;
     }
     const encodedName = encodeURIComponent(name || '');
     return `<button type="button" class="user-profile-link ${className}" data-user-id="${escapeAttribute(normalizedId)}" data-user-raw-id="${escapeAttribute(rawId)}" data-user-name="${encodedName}">${safeName}</button>`;
+  }
+
+  function rememberPostOwner(postId, ownerId) {
+    if (!postId || !ownerId) return;
+    postOwnerCache[postId] = ownerId;
+  }
+
+  function getPostOwnerId(postId) {
+    if (!postId) return null;
+    const card = document.querySelector(`.post-card[data-post-id="${postId}"]`);
+    if (card && card.dataset.ownerId) return card.dataset.ownerId;
+    if (postOwnerCache[postId]) return postOwnerCache[postId];
+    if (postDataCache[postId]?.userId) return postDataCache[postId].userId;
+    return null;
+  }
+
+  function isCurrentUserPostOwner(postId) {
+    const owner = normalizeUserId(getPostOwnerId(postId));
+    const current = normalizeUserId(getSafeUserId());
+    return owner && current && owner === current;
+  }
+
+  function canCurrentUserModifyPost(postId) {
+    return canUseBackendId(postId) && isCurrentUserPostOwner(postId);
+  }
+
+  function cachePostData(post) {
+    if (!post || post.id === undefined || post.id === null) return;
+    postDataCache[post.id] = { ...post };
+  }
+
+  function getCachedPostData(postId) {
+    return postDataCache[postId];
+  }
+
+  async function ensurePostData(postId) {
+    if (postDataCache[postId]) return postDataCache[postId];
+    const data = await fetchSinglePost(postId);
+    cachePostData(data);
+    rememberPostOwner(postId, data?.userId);
+    return data;
+  }
+
+  async function fetchSinglePost(postId) {
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch post');
+    return resp.json();
+  }
+
+  function buildPostUpdatePayload(base = {}, overrides = {}) {
+    return {
+      id: base.id,
+      userId: base.userId ?? getSafeUserId(),
+      category: base.category || '',
+      subcategory: base.subcategory || '',
+      videoUrl: base.videoUrl || '',
+      postText: overrides.postText ?? base.postText ?? base.text ?? '',
+      facebookName: base.facebookName || base.userName || authState?.name || '',
+      createdAt: base.createdAt || new Date().toISOString()
+    };
+  }
+
+  function updatePostTextInDom(postId, newText) {
+    if (!postId) return;
+    document.querySelectorAll(`.post-card[data-post-id="${postId}"] .post-text`).forEach(el => {
+      el.textContent = newText;
+    });
+    if (postDataCache[postId]) {
+      postDataCache[postId].postText = newText;
+      postDataCache[postId].text = newText;
+    }
+  }
+
+  function removePostCardsFromDom(postId) {
+    document.querySelectorAll(`.post-card[data-post-id="${postId}"]`).forEach(card => card.remove());
+  }
+
+  function clearPostCaches(postId) {
+    delete postDataCache[postId];
+    delete postOwnerCache[postId];
+    delete postLikeState[postId];
+    delete postRetweetState[postId];
+    delete postCommentCountState[postId];
+    delete commentPaginationState[postId];
+    delete commentSortOrder[postId];
+  }
+
+  function syncLocalPostEdit(postId, newText) {
+    const idx = posts.findIndex(p => String(p.id) === String(postId));
+    if (idx !== -1) {
+      posts[idx].text = newText;
+      posts[idx].postText = newText;
+      saveToStorage(POSTS_KEY, posts);
+    }
+  }
+
+  function syncLocalPostDelete(postId) {
+    const idx = posts.findIndex(p => String(p.id) === String(postId));
+    if (idx !== -1) {
+      posts.splice(idx, 1);
+      saveToStorage(POSTS_KEY, posts);
+    }
+  }
+
+  function refreshPostContextsAfterChange() {
+    if (currentRemoteCategory) {
+      fetchAndRenderRemotePosts();
+    } else if (postsList) {
+      renderPosts();
+    }
+    if (profileView && !profileView.classList.contains('hidden') && activeProfileUserId) {
+      openProfile(activeProfileUserId, { displayName: activeProfileDisplayName, forceReload: true });
+    }
   }
 
   function getAvatarPlaceholder(name) {
