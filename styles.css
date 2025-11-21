@@ -130,6 +130,10 @@ html, body {
 .btn-retweet-post { display: inline-flex; align-items: center; gap: 4px; }
 .btn-retweet-post.is-retweeted { border-color: var(--primary); color: var(--primary); background: rgba(56, 142, 60, 0.08); }
 .retweet-count-badge { font-weight: 600; margin-left: 4px; }
+.btn-retweet-post:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .post-owner-actions { display: flex; gap: 6px; margin-top: 8px; }
 .btn-post-action {
   background: none;
