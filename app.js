@@ -1782,28 +1782,32 @@ function getAuthHeaders() {
   async function retweetPost(postId, userIdOverride) {
     const userId = normalizeUserId(userIdOverride || getSafeUserId());
     if (!userId) throw new Error('Missing user id');
-    const params = new URLSearchParams({ userId });
-    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
-      method: 'POST',
-      headers: {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
-      body: JSON.stringify({ userId })
-    });
+    const resp = await sendRetweetRequest(postId, userId, 'POST');
     if (!resp.ok) throw new Error('Failed to retweet post');
   }
 
   async function undoRetweet(postId, userIdOverride) {
     const userId = normalizeUserId(userIdOverride || getSafeUserId());
     if (!userId) throw new Error('Missing user id');
-    const params = new URLSearchParams({ userId });
-    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
-      method: 'DELETE',
-      headers: { 'accept': '*/*', ...getAuthHeaders() }
-    });
+    const resp = await sendRetweetRequest(postId, userId, 'DELETE');
     if (!resp.ok) throw new Error('Failed to undo retweet');
+  }
+
+  async function sendRetweetRequest(postId, userId, method) {
+    const params = new URLSearchParams({ userId });
+    const url = `${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`;
+    try {
+      await fetch(url, { method: 'OPTIONS', headers: { 'accept': '*/*' } });
+    } catch (err) {
+      console.warn('Retweet preflight failed (safe to ignore in most cases):', err);
+    }
+    return fetch(url, {
+      method,
+      headers: {
+        'accept': '*/*',
+        ...getAuthHeaders()
+      }
+    });
   }
 
   async function likeComment(commentId) {
