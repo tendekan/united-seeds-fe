@@ -452,6 +452,10 @@ function getAuthHeaders() {
       return;
     }
     const userId = getSafeUserId();
+    if (normalizeUserId(userId) === normalizeUserId(postIdOwner(postId))) {
+      showToast('Не можете да споделите собствена публикация.', 'error');
+      return;
+    }
     if (!userId) {
       showToast('Неуспешно зареждане на профила.', 'error');
       return;
@@ -1893,6 +1897,10 @@ function getAuthHeaders() {
     const userId = getSafeUserId();
     if (!userId) {
       showToast('Неуспешно споделяне.', 'error');
+      return;
+    }
+    if (normalizeUserId(getPostOwnerId(postId)) === normalizeUserId(userId)) {
+      showToast('Не можете да споделите собствена публикация.', 'error');
       return;
     }
     button.disabled = true;
