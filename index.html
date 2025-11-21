@@ -93,6 +93,7 @@
             <div class="app-shell">
                 <aside class="sidebar">
                     <nav class="menu">
+                        <button id="nav-profile" class="menu-item" title="Моят профил"><span class="menu-icon">👤</span><span>Моят профил</span></button>
                         <button id="nav-create" class="menu-item" title="Създай публикация"><span class="menu-icon">✍️</span><span>Създай публикация</span></button>
                         <button id="nav-services" class="menu-item" title="Услуги"><span class="menu-icon">🧩</span><span>Услуги</span></button>
                         <button id="nav-dating" class="menu-item" title="Запознанства"><span class="menu-icon">💞</span><span>Запознанства</span></button>
@@ -100,6 +101,60 @@
                     </nav>
                 </aside>
                 <section class="main-pane">
+                    <div id="profile-view" class="profile-view hidden">
+                        <div class="profile-header">
+                            <div>
+                                <h2 id="profile-view-name">Профил</h2>
+                                <p id="profile-view-meta" class="muted small"></p>
+                            </div>
+                            <button id="btn-profile-refresh" class="btn btn-secondary btn-sm" type="button">Опресни</button>
+                        </div>
+                        <div id="profile-summary" class="profile-summary">
+                            <div>
+                                <span class="summary-label">Био:</span>
+                                <span id="profile-bio-display">Няма биография.</span>
+                            </div>
+                            <div>
+                                <span class="summary-label">Дата на раждане:</span>
+                                <span id="profile-dob-display">-</span>
+                            </div>
+                            <div>
+                                <span class="summary-label">Местоживеене:</span>
+                                <span id="profile-residency-display">-</span>
+                            </div>
+                        </div>
+                        <form id="profile-form" class="profile-form hidden">
+                            <label>
+                                <span>Био</span>
+                                <textarea id="profile-bio-input" rows="4" placeholder="Разкажете повече за себе си"></textarea>
+                            </label>
+                            <label>
+                                <span>Дата на раждане</span>
+                                <input id="profile-dob-input" type="date">
+                            </label>
+                            <label>
+                                <span>Местоживеене</span>
+                                <input id="profile-residency-input" type="text" placeholder="Град, държава">
+                            </label>
+                            <div class="actions">
+                                <button id="btn-save-profile" class="btn" type="submit">Запази профил</button>
+                            </div>
+                        </form>
+                        <div class="profile-section">
+                            <div class="section-title">
+                                <h3>Публикации</h3>
+                                <span id="profile-posts-count" class="muted small"></span>
+                            </div>
+                            <div id="profile-posts-list" class="posts-list slim"></div>
+                        </div>
+                        <div class="profile-section">
+                            <div class="section-title">
+                                <h3>Ретуитове</h3>
+                                <span id="profile-retweets-count" class="muted small"></span>
+                            </div>
+                            <div id="profile-retweets-list" class="posts-list slim"></div>
+                        </div>
+                    </div>
                     <div id="composer" class="composer hidden">
                         <div class="grid">
                             <label>

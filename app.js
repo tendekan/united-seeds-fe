@@ -86,14 +86,27 @@ function getAuthHeaders() {
     return /^[0-9]+$/.test(String(id || '').trim());
   }
 
+  function normalizeUserId(id) {
+    const str = String(id ?? '').trim();
+    if (!str) return '';
+    if (/^[0-9]+$/.test(str)) return str;
+    const digits = str.replace(/\D/g, '');
+    return digits;
+  }
+
   // ---------- App State ----------
   let authState = loadFromStorage(STORAGE_KEYS.auth, null);
   let skills = loadFromStorage(STORAGE_KEYS.skills, []);
   const postLikeState = {};
+  const postRetweetState = {};
   const commentLikeState = {};
+  let activeProfileUserId = null;
+  let activeProfileData = null;
+  let activeProfileDisplayName = '';
 
   function resetLikeCaches() {
     Object.keys(postLikeState).forEach(key => delete postLikeState[key]);
+    Object.keys(postRetweetState).forEach(key => delete postRetweetState[key]);
     Object.keys(commentLikeState).forEach(key => delete commentLikeState[key]);
   }
 
@@ -130,10 +143,27 @@ function getAuthHeaders() {
   const btnTileShare = document.getElementById('btn-tile-share');
   const btnTileLearn = document.getElementById('btn-tile-learn');
   const btnTileTip = document.getElementById('btn-tile-tip');
+  const navProfile = document.getElementById('nav-profile');
   const navCreate = document.getElementById('nav-create');
   const navServices = document.getElementById('nav-services');
   const navDating = document.getElementById('nav-dating');
   const navSettings = document.getElementById('nav-settings');
+  const profileView = document.getElementById('profile-view');
+  const profileViewName = document.getElementById('profile-view-name');
+  const profileViewMeta = document.getElementById('profile-view-meta');
+  const btnProfileRefresh = document.getElementById('btn-profile-refresh');
+  const profileSummary = document.getElementById('profile-summary');
+  const profileBioDisplay = document.getElementById('profile-bio-display');
+  const profileDobDisplay = document.getElementById('profile-dob-display');
+  const profileResidencyDisplay = document.getElementById('profile-residency-display');
+  const profileForm = document.getElementById('profile-form');
+  const profileBioInput = document.getElementById('profile-bio-input');
+  const profileDobInput = document.getElementById('profile-dob-input');
+  const profileResidencyInput = document.getElementById('profile-residency-input');
+  const profilePostsList = document.getElementById('profile-posts-list');
+  const profileRetweetsList = document.getElementById('profile-retweets-list');
+  const profilePostsCount = document.getElementById('profile-posts-count');
+  const profileRetweetsCount = document.getElementById('profile-retweets-count');
   const composer = document.getElementById('composer');
   const postText = document.getElementById('post-text');
   const postVideo = document.getElementById('post-video');
@@ -208,6 +238,13 @@ function getAuthHeaders() {
       return;
     }
 
+    const retweetBtn = e.target.closest('.btn-retweet-post');
+    if (retweetBtn) {
+      e.preventDefault();
+      await onRetweetButtonClick(retweetBtn);
+      return;
+    }
+
     const viewPostLikesBtn = e.target.closest('.btn-view-post-likes');
     if (viewPostLikesBtn) {
       e.preventDefault();
@@ -262,6 +299,7 @@ function getAuthHeaders() {
   function attachEvents() {
     if (btnOpenSignin) btnOpenSignin.addEventListener('click', () => openAuthModal('Влез'));
     if (btnOpenSignup) btnOpenSignup.addEventListener('click', () => openAuthModal('Регистрирай се'));
+    if (navProfile) navProfile.addEventListener('click', onNavigateToOwnProfile);
   if (btnModalGoogle) btnModalGoogle.addEventListener('click', onGoogleSignInClick);
     if (btnModalFacebook) btnModalFacebook.addEventListener('click', onFacebookSignInClick);
     if (authModalClose) authModalClose.addEventListener('click', closeAuthModal);
@@ -303,10 +341,39 @@ function getAuthHeaders() {
     if (navDating) navDating.addEventListener('click', () => showSection('dating'));
     if (navSettings) navSettings.addEventListener('click', () => showSection('settings'));
     if (btnPost) btnPost.addEventListener('click', onCreatePost);
+    if (profileForm) profileForm.addEventListener('submit', onProfileFormSubmit);
+    if (btnProfileRefresh) btnProfileRefresh.addEventListener('click', () => {
+      if (activeProfileUserId) {
+        openProfile(activeProfileUserId, { displayName: activeProfileDisplayName, forceReload: true });
+      }
+    });
     setupCategories();
     setupServiceTileRouting();
     setupSettings();
   }
+
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest && event.target.closest('.user-profile-link');
+    if (!link) return;
+    event.preventDefault();
+    const userId = link.dataset.userId;
+    const encodedName = link.dataset.userName || '';
+    const displayName = encodedName ? decodeURIComponent(encodedName) : link.textContent;
+    if (userId) {
+      openProfile(userId, { displayName });
+    } else {
+      showToast('Профилът не е наличен.');
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    const target = event.target;
+    if (target && target.classList && target.classList.contains('user-profile-link')) {
+      event.preventDefault();
+      target.click();
+    }
+  });
 
   const SETTINGS_KEY = 'unitedseeds.settings';
   function setupSettings() {
@@ -330,6 +397,223 @@ function getAuthHeaders() {
       currency: settingsCurrency ? settingsCurrency.value : 'EUR'
     };
     saveToStorage(SETTINGS_KEY, s);
+  }
+
+  // ---------- Profiles ----------
+  function onNavigateToOwnProfile() {
+    if (!authState) {
+      openAuthModal('Влез');
+      return;
+    }
+    const userId = getSafeUserId();
+    if (!userId) {
+      showToast('Неуспешно зареждане на профила.');
+      return;
+    }
+    activeProfileDisplayName = authState.name || '';
+    openProfile(userId, { displayName: activeProfileDisplayName, forceReload: true });
+  }
+
+  async function openProfile(userId, { displayName = '', forceReload = false } = {}) {
+    const normalizedId = normalizeUserId(userId);
+    if (!normalizedId) {
+      showToast('Профилът не е наличен.');
+      return;
+    }
+    activeProfileUserId = normalizedId;
+    if (displayName) {
+      activeProfileDisplayName = displayName;
+    } else if (normalizeUserId(getSafeUserId()) === normalizedId) {
+      activeProfileDisplayName = authState?.name || '';
+    } else {
+      activeProfileDisplayName = '';
+    }
+    showSection('profile');
+    setProfileLoadingState();
+    if (activeProfileData && !forceReload && String(activeProfileData.userId) === normalizedId) {
+      renderProfileView(activeProfileData);
+      return;
+    }
+    try {
+      const profile = await fetchUserProfile(normalizedId);
+      activeProfileData = profile;
+      renderProfileView(profile);
+    } catch (error) {
+      console.error('Failed to load profile', error);
+      setProfileErrorState();
+      showToast('Неуспешно зареждане на профила.');
+    }
+  }
+
+  async function fetchUserProfile(userId) {
+    const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch profile');
+    return resp.json();
+  }
+
+  async function updateUserProfile(userId, payload) {
+    const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile`, {
+      method: 'PUT',
+      headers: { 'accept': '*/*', 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(payload)
+    });
+    if (!resp.ok) throw new Error('Failed to update profile');
+    return resp.json();
+  }
+
+  async function onProfileFormSubmit(event) {
+    event.preventDefault();
+    if (!authState) {
+      openAuthModal('Влез');
+      return;
+    }
+    const userId = getSafeUserId();
+    if (!userId || normalizeUserId(userId) !== normalizeUserId(activeProfileUserId)) {
+      showToast('Можете да редактирате само своя профил.');
+      return;
+    }
+    const payload = {
+      bio: (profileBioInput?.value || '').trim(),
+      dateOfBirth: profileDobInput?.value || null,
+      residency: (profileResidencyInput?.value || '').trim()
+    };
+    showGlobalSpinner(true);
+    try {
+      const updated = await updateUserProfile(userId, payload);
+      activeProfileData = updated;
+      renderProfileView(updated);
+      showToast('Профилът беше обновен.');
+    } catch (error) {
+      console.error('Failed to update profile', error);
+      showToast('Неуспешно обновяване на профила.');
+    } finally {
+      showGlobalSpinner(false);
+    }
+  }
+
+  function renderProfileView(profile) {
+    if (!profileView) return;
+    const userId = profile?.userId ? String(profile.userId) : activeProfileUserId;
+    if (!activeProfileDisplayName && authState && userId && normalizeUserId(getSafeUserId()) === normalizeUserId(userId)) {
+      activeProfileDisplayName = authState.name || '';
+    }
+    const heading = activeProfileDisplayName ||
+      profile?.posts?.[0]?.facebookName ||
+      (userId ? `Потребител ${userId}` : 'Профил');
+    if (profileViewName) profileViewName.textContent = heading;
+    if (profileViewMeta) profileViewMeta.textContent = userId ? `ID: ${userId}` : '';
+    if (profileBioDisplay) profileBioDisplay.textContent = profile?.bio?.trim() || 'Няма биография.';
+    if (profileDobDisplay) profileDobDisplay.textContent = profile?.dateOfBirth ? formatProfileDate(profile.dateOfBirth) : '-';
+    if (profileResidencyDisplay) profileResidencyDisplay.textContent = profile?.residency?.trim() || '-';
+    const isOwnProfile = normalizeUserId(getSafeUserId()) === normalizeUserId(userId);
+    if (profileForm) {
+      if (isOwnProfile) {
+        profileForm.classList.remove('hidden');
+        if (profileBioInput) profileBioInput.value = profile?.bio || '';
+        if (profileDobInput) profileDobInput.value = profile?.dateOfBirth || '';
+        if (profileResidencyInput) profileResidencyInput.value = profile?.residency || '';
+      } else {
+        profileForm.classList.add('hidden');
+      }
+    }
+    const posts = Array.isArray(profile?.posts) ? profile.posts : [];
+    const retweets = Array.isArray(profile?.retweets) ? profile.retweets : [];
+    if (profilePostsCount) profilePostsCount.textContent = posts.length ? `${posts.length} общо` : 'Няма публикации';
+    if (profileRetweetsCount) profileRetweetsCount.textContent = retweets.length ? `${retweets.length} общо` : 'Няма ретуитове';
+    renderProfilePostsList(posts);
+    renderProfileRetweetsList(retweets);
+  }
+
+  function renderProfilePostsList(items) {
+    if (!profilePostsList) return;
+    if (!items.length) {
+      profilePostsList.innerHTML = '<div class="muted">Все още няма публикувано съдържание.</div>';
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    items.forEach(post => {
+      const el = document.createElement('div');
+      el.className = 'post-card';
+      const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', post.userId, 'owner-name');
+      el.innerHTML = `
+        <div class="post-header">
+          <div>${authorMarkup}
+            <div class="post-meta">${escapeHtml(post.category || '')}${post.subcategory ? ' • ' + escapeHtml(post.subcategory) : ''}</div>
+          </div>
+        </div>
+        <div class="post-text">${escapeHtml(post.postText || '')}</div>
+        <div class="post-meta">${formatDateTimeSafe(post.createdAt)}</div>
+      `;
+      frag.appendChild(el);
+    });
+    profilePostsList.innerHTML = '';
+    profilePostsList.appendChild(frag);
+  }
+
+  function renderProfileRetweetsList(items) {
+    if (!profileRetweetsList) return;
+    if (!items.length) {
+      profileRetweetsList.innerHTML = '<div class="muted">Няма ретуитнати публикации.</div>';
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    items.forEach(entry => {
+      const post = entry.post || {};
+      const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', post.userId, 'owner-name');
+      const retweetDate = formatDateTimeSafe(entry.retweetedAt);
+      const retweetedMeta = retweetDate ? `Ретуитнато на ${retweetDate}` : 'Ретуитнато';
+      const tags = post.category ? `<div class="tags"><span class="tag">${escapeHtml(post.category)}</span>${post.subcategory ? `<span class="tag">${escapeHtml(post.subcategory)}</span>` : ''}</div>` : '';
+      const el = document.createElement('div');
+      el.className = 'post-card';
+      el.innerHTML = `
+        <div class="post-header">
+          <div>${authorMarkup}
+            <div class="post-meta">${escapeHtml(post.category || '')}${post.subcategory ? ' • ' + escapeHtml(post.subcategory) : ''}</div>
+          </div>
+        </div>
+        <div class="post-meta">${retweetedMeta}</div>
+        <div class="post-text">${escapeHtml(post.postText || '')}</div>
+        ${tags}
+        <div class="post-meta">${formatDateTimeSafe(post.createdAt)}</div>
+      `;
+      frag.appendChild(el);
+    });
+    profileRetweetsList.innerHTML = '';
+    profileRetweetsList.appendChild(frag);
+  }
+
+  function setProfileLoadingState() {
+    if (profileForm) profileForm.classList.add('hidden');
+    if (profileBioDisplay) profileBioDisplay.textContent = 'Зареждане...';
+    if (profileDobDisplay) profileDobDisplay.textContent = '...';
+    if (profileResidencyDisplay) profileResidencyDisplay.textContent = '...';
+    if (profilePostsList) profilePostsList.innerHTML = '<div class="muted">Зарежда се…</div>';
+    if (profileRetweetsList) profileRetweetsList.innerHTML = '<div class="muted">Зарежда се…</div>';
+  }
+
+  function setProfileErrorState() {
+    if (profileForm) profileForm.classList.add('hidden');
+    if (profileBioDisplay) profileBioDisplay.textContent = 'Няма данни.';
+    if (profileDobDisplay) profileDobDisplay.textContent = '-';
+    if (profileResidencyDisplay) profileResidencyDisplay.textContent = '-';
+    if (profilePostsList) profilePostsList.innerHTML = '<div class="muted">Неуспешно зареждане на публикациите.</div>';
+    if (profileRetweetsList) profileRetweetsList.innerHTML = '<div class="muted">Неуспешно зареждане на ретуитовете.</div>';
+  }
+
+  function formatProfileDate(dateStr) {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return dateStr;
+    return date.toLocaleDateString('bg-BG', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  function formatDateTimeSafe(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('bg-BG');
   }
 
   const CATEGORY_LABELS = [
@@ -625,6 +909,7 @@ function getAuthHeaders() {
       if (postVideo) postVideo.value = '';
       return;
     }
+    const safeUserId = getSafeUserId();
     showGlobalSpinner(true);
     // Prepare local post but only add to UI after BE success
     const newLocalPost = {
@@ -633,7 +918,12 @@ function getAuthHeaders() {
       category: postCategory ? postCategory.value : '',
       subcategory: postSubcategory ? postSubcategory.value : '',
       videoName: (postVideo && postVideo.files && postVideo.files[0]) ? postVideo.files[0].name : '',
-      author: { name: authState.name, photoUrl: authState.photoUrl },
+      author: {
+        name: authState.name,
+        photoUrl: authState.photoUrl,
+        userId: safeUserId,
+        id: safeUserId
+      },
       createdAt: Date.now()
     };
 
@@ -663,7 +953,6 @@ function getAuthHeaders() {
         }
       }
 
-      const safeUserId = getSafeUserId();
       const payload = {
         id: twoDigit(Math.floor(Date.now() / 1000)),
         userId: safeUserId ? Number(safeUserId) : undefined,
@@ -786,11 +1075,15 @@ function getAuthHeaders() {
       el.className = 'post-card';
       const canLike = canUseBackendId(p.id);
       const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
+      const retweetButtonAttrs = canLike ? '' : 'disabled title="Ретуитите са налични само за публикации от сървъра"';
+      const authorMarkup = buildUserProfileLabel(p.author?.name, p.author?.userId || p.author?.id, 'owner-name');
+      const authorPhoto = p.author?.photoUrl || getAvatarPlaceholder(p.author?.name);
+      const authorName = escapeHtml(p.author?.name || 'Потребител');
       el.innerHTML = `
         <div class="post-header">
-          <img class="avatar" src="${p.author.photoUrl || getAvatarPlaceholder(p.author.name)}" alt="${p.author.name}">
+          <img class="avatar" src="${authorPhoto}" alt="${authorName}">
           <div>
-            <div class="owner-name">${escapeHtml(p.author.name)}</div>
+            ${authorMarkup}
             <div class="post-meta">${new Date(p.createdAt).toLocaleString()}</div>
           </div>
         </div>
@@ -801,6 +1094,11 @@ function getAuthHeaders() {
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
             <span class="like-heart" aria-hidden="true">♡</span>
             <span class="like-label">Харесай</span>
+          </button>
+          <button class="btn btn-secondary btn-sm btn-retweet-post" data-post-id="${p.id}" ${retweetButtonAttrs}>
+            <span class="retweet-icon" aria-hidden="true">⟳</span>
+            <span class="retweet-label">Ретуитни</span>
+            <span class="retweet-count-badge">0</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
             ${buildLikesLabel(0)}
@@ -830,6 +1128,7 @@ function getAuthHeaders() {
     postsList.appendChild(frag);
     if (postsPagination) postsPagination.classList.add('hidden');
     initializePostLikeButtons(postsList);
+    initializePostRetweetButtons(postsList);
   }
 
   async function toggleComments(button) {
@@ -909,6 +1208,7 @@ function getAuthHeaders() {
       el.className = 'comment-card';
       el.setAttribute('data-comment-id', comment.id);
       const authorName = comment.authorName || comment.userName || 'Потребител';
+      const authorMarkup = buildUserProfileLabel(authorName, comment.userId, 'comment-author');
       // Check if current user owns this comment - compare both userId and userName
       const isOwner = authState && (
         (comment.userId && String(comment.userId) === String(authState.userId)) ||
@@ -921,7 +1221,7 @@ function getAuthHeaders() {
       el.innerHTML = `
         <div class="comment-content">
           <div class="comment-header">
-            <div class="comment-author">${escapeHtml(authorName)}</div>
+            ${authorMarkup}
             ${isOwner ? `
               <div class="comment-actions">
                 <button class="btn-link btn-edit-comment" data-comment-id="${comment.id}" title="Редактирай">✏️</button>
@@ -1299,6 +1599,134 @@ function getAuthHeaders() {
     if (!resp.ok) throw new Error('Failed to unlike post');
   }
 
+  // ---------- Retweets ----------
+  function initializePostRetweetButtons(root) {
+    if (!root) return;
+    const buttons = root.querySelectorAll('.btn-retweet-post');
+    buttons.forEach(btn => hydratePostRetweetButton(btn));
+  }
+
+  async function hydratePostRetweetButton(button) {
+    if (!button) return;
+    const postId = button.dataset.postId;
+    if (!canUseBackendId(postId)) {
+      applyPostRetweetStateToButton(button, postRetweetState[postId] || { count: 0, retweeted: false });
+      return;
+    }
+    try {
+      const state = await fetchPostRetweetState(postId);
+      postRetweetState[postId] = state;
+      applyPostRetweetStateToButton(button, state);
+    } catch (error) {
+      console.error('Failed to hydrate retweet state:', error);
+    }
+  }
+
+  async function refreshPostRetweetButton(postId, button) {
+    if (!button || !canUseBackendId(postId)) return;
+    const state = await fetchPostRetweetState(postId);
+    postRetweetState[postId] = state;
+    applyPostRetweetStateToButton(button, state);
+  }
+
+  function applyPostRetweetStateToButton(button, state = { count: 0, retweeted: false }) {
+    if (!button) return;
+    const label = button.querySelector('.retweet-label');
+    const countBadge = button.querySelector('.retweet-count-badge');
+    if (label) label.textContent = state?.retweeted ? 'Ретуитнато' : 'Ретуитни';
+    if (countBadge) countBadge.textContent = Number(state?.count) || 0;
+    button.classList.toggle('is-retweeted', Boolean(state?.retweeted));
+  }
+
+  async function onRetweetButtonClick(button) {
+    if (!button) return;
+    const postId = button.dataset.postId;
+    if (!canUseBackendId(postId)) {
+      showToast('Ретуитите са налични само за публикации от сървъра.');
+      return;
+    }
+    if (!authState) {
+      openAuthModal('Влез');
+      return;
+    }
+    const userId = getSafeUserId();
+    if (!userId) {
+      showToast('Неуспешно ретуитване.');
+      return;
+    }
+    button.disabled = true;
+    try {
+      const alreadyRetweeted = postRetweetState[postId]?.retweeted;
+      if (alreadyRetweeted) {
+        await undoRetweet(postId, userId);
+      } else {
+        await retweetPost(postId, userId);
+      }
+      await refreshPostRetweetButton(postId, button);
+      const normalizedViewerId = normalizeUserId(userId);
+      const shouldRefreshProfile = normalizedViewerId &&
+        normalizeUserId(activeProfileUserId) === normalizedViewerId &&
+        profileView &&
+        !profileView.classList.contains('hidden');
+      if (shouldRefreshProfile) {
+        openProfile(normalizedViewerId, { displayName: activeProfileDisplayName, forceReload: true });
+      }
+    } catch (error) {
+      console.error('Failed to toggle retweet:', error);
+      showToast('Неуспешно ретуитване.');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function fetchPostRetweetState(postId) {
+    const countPromise = fetchPostRetweetCount(postId);
+    const retweetedPromise = authState ? hasUserRetweetedPost(postId) : Promise.resolve(false);
+    const [count, retweeted] = await Promise.all([countPromise, retweetedPromise]);
+    return { count, retweeted };
+  }
+
+  async function fetchPostRetweetCount(postId) {
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets/count`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch retweet count');
+    const data = await resp.json();
+    return Number(data) || 0;
+  }
+
+  async function hasUserRetweetedPost(postId) {
+    const userId = getSafeUserId();
+    if (!userId) return false;
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets/user/${userId}`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to check retweet state');
+    return Boolean(await resp.json());
+  }
+
+  async function retweetPost(postId, userIdOverride) {
+    const userId = normalizeUserId(userIdOverride || getSafeUserId());
+    if (!userId) throw new Error('Missing user id');
+    const params = new URLSearchParams({ userId });
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
+      method: 'POST',
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to retweet post');
+  }
+
+  async function undoRetweet(postId, userIdOverride) {
+    const userId = normalizeUserId(userIdOverride || getSafeUserId());
+    if (!userId) throw new Error('Missing user id');
+    const params = new URLSearchParams({ userId });
+    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
+      method: 'DELETE',
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to undo retweet');
+  }
+
   async function likeComment(commentId) {
     const userId = getSafeUserId();
     if (!userId) throw new Error('Missing user id');
@@ -1571,11 +1999,14 @@ function getAuthHeaders() {
     if (servicesView) servicesView.classList.add('hidden');
     if (datingView) datingView.classList.add('hidden');
     if (settingsView) settingsView.classList.add('hidden');
+    if (profileView) profileView.classList.add('hidden');
     if (postsList) postsList.classList.add('hidden');
     if (postsPagination) postsPagination.classList.add('hidden');
 
     if (section === 'create') {
       if (composer) composer.classList.remove('hidden');
+    } else if (section === 'profile') {
+      if (profileView) profileView.classList.remove('hidden');
     } else if (section === 'services') {
   if (servicesView) servicesView.classList.remove('hidden');
   // Reset remote selection and hide posts pagination on services
@@ -1662,10 +2093,12 @@ function getAuthHeaders() {
       el.className = 'post-card';
       const canLike = canUseBackendId(p.id);
       const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
+      const retweetButtonAttrs = canLike ? '' : 'disabled title="Ретуитите са налични само за публикации от сървъра"';
+      const authorMarkup = buildUserProfileLabel(p.facebookName || p.userId || 'Потребител', p.userId, 'owner-name');
       el.innerHTML = `
         <div class="post-header">
           <div>
-            <div class="owner-name">${escapeHtml(String(p.facebookName || p.userId || ''))}</div>
+            ${authorMarkup}
             <div class="post-meta">${escapeHtml(String(p.category || ''))} ${p.subcategory ? '• ' + escapeHtml(String(p.subcategory)) : ''}</div>
           </div>
         </div>
@@ -1676,6 +2109,11 @@ function getAuthHeaders() {
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
             <span class="like-heart" aria-hidden="true">♡</span>
             <span class="like-label">Харесай</span>
+          </button>
+          <button class="btn btn-secondary btn-sm btn-retweet-post" data-post-id="${p.id}" ${retweetButtonAttrs}>
+            <span class="retweet-icon" aria-hidden="true">⟳</span>
+            <span class="retweet-label">Ретуитни</span>
+            <span class="retweet-count-badge">0</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
             ${buildLikesLabel(0)}
@@ -1711,6 +2149,7 @@ function getAuthHeaders() {
     });
     postsList.appendChild(frag);
     initializePostLikeButtons(postsList);
+    initializePostRetweetButtons(postsList);
   }
 
   async function requestSignedDownloadUrl(fileName) {
@@ -1908,6 +2347,16 @@ function getAuthHeaders() {
 
   function escapeHtml(str) {
     return (str || '').replace(/[&<>"]+/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  }
+
+  function buildUserProfileLabel(name, userId, className = 'owner-name') {
+    const safeName = escapeHtml(name || 'Потребител');
+    const normalizedId = normalizeUserId(userId);
+    if (!normalizedId) {
+      return `<span class="${className}">${safeName}</span>`;
+    }
+    const encodedName = encodeURIComponent(name || '');
+    return `<button type="button" class="user-profile-link ${className}" data-user-id="${normalizedId}" data-user-name="${encodedName}">${safeName}</button>`;
   }
 
   function getAvatarPlaceholder(name) {
