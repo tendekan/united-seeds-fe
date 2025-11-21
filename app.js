@@ -421,11 +421,12 @@ function getAuthHeaders() {
       const data = await fetchComments(postId, state.currentPage, 5, newOrder);
       state.totalPages = data.totalPages;
       state.totalComments = data.total;
-      renderComments(data.comments, commentsList, postId, state);
-    } catch (error) {
-      console.error('Failed to change sort order:', error);
-      commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
-    }
+          renderComments(data.comments, commentsList, postId, state);
+          updatePostStatsDisplay(postId, { comments: state.totalComments });
+        } catch (error) {
+          console.error('Failed to change sort order:', error);
+          commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
+        }
   }
 
   function handlePostRootSubmit(event) {
@@ -721,15 +722,36 @@ function getAuthHeaders() {
     return el;
   }
 
-  function buildPostStats(entry) {
-    const likeCount = safeCount(entry?.likeCount ?? (entry?.likes?.length ?? 0));
-    const commentCount = safeCount(entry?.commentCount ?? (entry?.comments?.length ?? 0));
-    const shareCount = safeCount(entry?.shareCount ?? 0);
+  function buildPostStats(entry, overrides = {}) {
+    const base = entry?.post || entry || {};
+    const postId = base.id ?? entry?.id ?? '';
+    const likeCount = safeCount(overrides.likes ?? entry?.likeCount ?? (entry?.likes?.length ?? 0));
+    const commentCount = safeCount(overrides.comments ?? entry?.commentCount ?? (entry?.comments?.length ?? 0));
+    const shareCount = safeCount(overrides.shares ?? entry?.shareCount ?? 0);
+    const text = formatStatsText(likeCount, commentCount, shareCount);
     return `
-      <div class="post-meta post-stats">
-        Харесвания: ${likeCount} • Коментари: ${commentCount} • Споделяния: ${shareCount}
+      <div class="post-meta post-stats" data-post-id="${postId}" data-likes="${likeCount}" data-comments="${commentCount}" data-shares="${shareCount}">
+        ${text}
       </div>
     `;
+  }
+
+  function formatStatsText(likes, comments, shares) {
+    return `Харесвания: ${likes} • Коментари: ${comments} • Споделяния: ${shares}`;
+  }
+
+  function updatePostStatsDisplay(postId, counts = {}) {
+    if (!postId) return;
+    const nodes = document.querySelectorAll(`.post-stats[data-post-id="${postId}"]`);
+    nodes.forEach(node => {
+      if (counts.likes !== undefined) node.dataset.likes = String(safeCount(counts.likes));
+      if (counts.comments !== undefined) node.dataset.comments = String(safeCount(counts.comments));
+      if (counts.shares !== undefined) node.dataset.shares = String(safeCount(counts.shares));
+      const likes = Number(node.dataset.likes || 0);
+      const comments = Number(node.dataset.comments || 0);
+      const shares = Number(node.dataset.shares || 0);
+      node.textContent = formatStatsText(likes, comments, shares);
+    });
   }
 
   function safeCount(value) {
@@ -1319,6 +1341,8 @@ function getAuthHeaders() {
         state.totalPages = data.totalPages;
         state.totalComments = data.total;
         renderComments(data.comments, commentsList, postId, state);
+        updatePostStatsDisplay(postId, { comments: state.totalComments });
+        updatePostStatsDisplay(postId, { comments: state.totalComments });
       } catch (error) {
         console.error('Failed to fetch comments:', error);
         commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
@@ -1452,6 +1476,7 @@ function getAuthHeaders() {
           paginationState.totalPages = data.totalPages;
           paginationState.totalComments = data.total;
           renderComments(data.comments, commentsList, postId, paginationState);
+          updatePostStatsDisplay(postId, { comments: paginationState.totalComments });
         } catch (error) {
           console.error('Failed to fetch comments:', error);
           commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
@@ -1470,6 +1495,7 @@ function getAuthHeaders() {
           paginationState.totalPages = data.totalPages;
           paginationState.totalComments = data.total;
           renderComments(data.comments, commentsList, postId, paginationState);
+          updatePostStatsDisplay(postId, { comments: paginationState.totalComments });
         } catch (error) {
           console.error('Failed to fetch comments:', error);
           commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
@@ -1540,6 +1566,7 @@ function getAuthHeaders() {
   function applyPostLikeStateToButton(button, state = { count: 0, liked: false }) {
     updateLikeButtonVisual(button, state);
     updatePostLikeCountDisplay(button.dataset.postId, state.count);
+    updatePostStatsDisplay(button.dataset.postId, { likes: state.count });
   }
 
   function applyCommentLikeStateToButton(button, state = { count: 0, liked: false }) {
@@ -1796,6 +1823,7 @@ function getAuthHeaders() {
     if (label) label.textContent = state?.retweeted ? 'Споделено' : 'Сподели';
     if (countBadge) countBadge.textContent = Number(state?.count) || 0;
     button.classList.toggle('is-retweeted', Boolean(state?.retweeted));
+    updatePostStatsDisplay(button.dataset.postId, { shares: state?.count ?? 0 });
   }
 
   async function onRetweetButtonClick(button) {
@@ -1989,6 +2017,7 @@ function getAuthHeaders() {
         state.totalPages = data.totalPages;
         state.totalComments = data.total;
         renderComments(data.comments, commentsList, postId, state);
+        updatePostStatsDisplay(postId, { comments: state.totalComments });
       } catch (error) {
         console.error('Failed to reload comments:', error);
       }
