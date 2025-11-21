@@ -213,91 +213,9 @@ function getAuthHeaders() {
     '118701076488-ftubu48jfl4tvk7dg6op1cs25kl7fl7i.apps.googleusercontent.com';
   initGoogle();
   initFacebook();
-  postsList.addEventListener('click', async (e) => {
-    const toggleBtn = e.target.closest('.btn-toggle-comments');
-    if (toggleBtn) {
-      toggleComments(toggleBtn);
-      return;
-    }
-
-    const editBtn = e.target.closest('.btn-edit-comment');
-    if (editBtn) {
-      e.preventDefault();
-      const commentId = editBtn.getAttribute('data-comment-id');
-      await handleEditComment(commentId);
-      return;
-    }
-
-    const deleteBtn = e.target.closest('.btn-delete-comment');
-    if (deleteBtn) {
-      e.preventDefault();
-      const commentId = deleteBtn.getAttribute('data-comment-id');
-      await handleDeleteComment(commentId);
-      return;
-    }
-
-    const postLikeBtn = e.target.closest('.btn-like-post');
-    if (postLikeBtn) {
-      e.preventDefault();
-      await onPostLikeClick(postLikeBtn);
-      return;
-    }
-
-    const retweetBtn = e.target.closest('.btn-retweet-post');
-    if (retweetBtn) {
-      e.preventDefault();
-      await onRetweetButtonClick(retweetBtn);
-      return;
-    }
-
-    const viewPostLikesBtn = e.target.closest('.btn-view-post-likes');
-    if (viewPostLikesBtn) {
-      e.preventDefault();
-      await showPostLikesModal(viewPostLikesBtn.dataset.postId);
-      return;
-    }
-
-    const viewCommentLikesBtn = e.target.closest('.btn-view-comment-likes');
-    if (viewCommentLikesBtn) {
-      e.preventDefault();
-      await showCommentLikesModal(viewCommentLikesBtn.dataset.commentId);
-      return;
-    }
-
-    const commentLikeBtn = e.target.closest('.btn-like-comment');
-    if (commentLikeBtn) {
-      e.preventDefault();
-      await onCommentLikeClick(commentLikeBtn);
-    }
-  });
-
-  postsList.addEventListener('change', async (e) => {
-    const select = e.target.closest('.comment-sort');
-    if (select) {
-      const postCard = select.closest('.post-card');
-      if (!postCard) return;
-      const postId = postCard.dataset.postId;
-      const newOrder = select.value === 'asc' ? 'asc' : 'desc';
-      commentSortOrder[postId] = newOrder;
-      if (!commentPaginationState[postId]) {
-        commentPaginationState[postId] = { currentPage: 1, totalPages: 1, totalComments: 0 };
-      } else {
-        commentPaginationState[postId].currentPage = 1;
-      }
-      const commentsList = postCard.querySelector('.comments-list');
-      commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
-      try {
-        const state = commentPaginationState[postId];
-        const data = await fetchComments(postId, state.currentPage, 5, newOrder);
-        state.totalPages = data.totalPages;
-        state.totalComments = data.total;
-        renderComments(data.comments, commentsList, postId, state);
-      } catch (error) {
-        console.error('Failed to change sort order:', error);
-        commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
-      }
-    }
-  });
+  attachPostEventDelegation(postsList);
+  attachPostEventDelegation(profilePostsList);
+  attachPostEventDelegation(profileRetweetsList);
   }
 
 
@@ -362,6 +280,9 @@ function getAuthHeaders() {
     setupCategories();
     setupServiceTileRouting();
     setupSettings();
+    attachPostEventDelegation(postsList);
+    attachPostEventDelegation(profilePostsList);
+    attachPostEventDelegation(profileRetweetsList);
   }
 
   document.addEventListener('click', (event) => {
@@ -409,6 +330,116 @@ function getAuthHeaders() {
       currency: settingsCurrency ? settingsCurrency.value : 'EUR'
     };
     saveToStorage(SETTINGS_KEY, s);
+  }
+
+  function attachPostEventDelegation(root) {
+    if (!root || root.__hasPostEvents) return;
+    root.__hasPostEvents = true;
+    root.addEventListener('click', handlePostRootClick);
+    root.addEventListener('change', handlePostRootChange);
+    root.addEventListener('submit', handlePostRootSubmit);
+  }
+
+  async function handlePostRootClick(event) {
+    const root = event.currentTarget;
+    const target = event.target;
+
+    const toggleBtn = closestInRoot(target, '.btn-toggle-comments', root);
+    if (toggleBtn) {
+      event.preventDefault();
+      toggleComments(toggleBtn);
+      return;
+    }
+
+    const editBtn = closestInRoot(target, '.btn-edit-comment', root);
+    if (editBtn) {
+      event.preventDefault();
+      await handleEditComment(editBtn.getAttribute('data-comment-id'));
+      return;
+    }
+
+    const deleteBtn = closestInRoot(target, '.btn-delete-comment', root);
+    if (deleteBtn) {
+      event.preventDefault();
+      await handleDeleteComment(deleteBtn.getAttribute('data-comment-id'));
+      return;
+    }
+
+    const postLikeBtn = closestInRoot(target, '.btn-like-post', root);
+    if (postLikeBtn) {
+      event.preventDefault();
+      await onPostLikeClick(postLikeBtn);
+      return;
+    }
+
+    const retweetBtn = closestInRoot(target, '.btn-retweet-post', root);
+    if (retweetBtn) {
+      event.preventDefault();
+      await onRetweetButtonClick(retweetBtn);
+      return;
+    }
+
+    const viewPostLikesBtn = closestInRoot(target, '.btn-view-post-likes', root);
+    if (viewPostLikesBtn) {
+      event.preventDefault();
+      await showPostLikesModal(viewPostLikesBtn.dataset.postId);
+      return;
+    }
+
+    const viewCommentLikesBtn = closestInRoot(target, '.btn-view-comment-likes', root);
+    if (viewCommentLikesBtn) {
+      event.preventDefault();
+      await showCommentLikesModal(viewCommentLikesBtn.dataset.commentId);
+      return;
+    }
+
+    const commentLikeBtn = closestInRoot(target, '.btn-like-comment', root);
+    if (commentLikeBtn) {
+      event.preventDefault();
+      await onCommentLikeClick(commentLikeBtn);
+    }
+  }
+
+  async function handlePostRootChange(event) {
+    const root = event.currentTarget;
+    const select = closestInRoot(event.target, '.comment-sort', root);
+    if (!select) return;
+    const postCard = select.closest('.post-card');
+    if (!postCard) return;
+    const postId = postCard.dataset.postId;
+    const newOrder = select.value === 'asc' ? 'asc' : 'desc';
+    commentSortOrder[postId] = newOrder;
+    if (!commentPaginationState[postId]) {
+      commentPaginationState[postId] = { currentPage: 1, totalPages: 1, totalComments: 0 };
+    } else {
+      commentPaginationState[postId].currentPage = 1;
+    }
+    const commentsList = postCard.querySelector('.comments-list');
+    commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
+    try {
+      const state = commentPaginationState[postId];
+      const data = await fetchComments(postId, state.currentPage, 5, newOrder);
+      state.totalPages = data.totalPages;
+      state.totalComments = data.total;
+      renderComments(data.comments, commentsList, postId, state);
+    } catch (error) {
+      console.error('Failed to change sort order:', error);
+      commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
+    }
+  }
+
+  function handlePostRootSubmit(event) {
+    const root = event.currentTarget;
+    const form = closestInRoot(event.target, '.comment-form', root);
+    if (!form) return;
+    event.preventDefault();
+    onCommentSubmit(form);
+  }
+
+  function closestInRoot(start, selector, root) {
+    if (!start) return null;
+    const el = start.closest(selector);
+    return el && root.contains(el) ? el : null;
   }
 
   // ---------- Profiles ----------
@@ -1523,12 +1554,13 @@ function getAuthHeaders() {
 
   function updatePostLikeCountDisplay(postId, count) {
     if (!postId) return;
-    const card = postsList?.querySelector(`.post-card[data-post-id="${postId}"]`);
-    if (!card) return;
-    const button = card.querySelector('.btn-view-post-likes');
-    if (button) {
-      button.innerHTML = buildLikesLabel(count);
-    }
+    const cards = document.querySelectorAll(`.post-card[data-post-id="${postId}"]`);
+    cards.forEach(card => {
+      const button = card.querySelector('.btn-view-post-likes');
+      if (button) {
+        button.innerHTML = buildLikesLabel(count);
+      }
+    });
   }
 
   function updateCommentLikeCountDisplay(commentId, count) {
@@ -1888,13 +1920,7 @@ function getAuthHeaders() {
     if (!resp.ok) throw new Error('Failed to unlike comment');
   }
 
-  postsList.addEventListener('submit', (e) => {
-    const form = e.target.closest('.comment-form');
-    if (form) {
-      e.preventDefault();
-      onCommentSubmit(form);
-    }
-  });
+  // post comment submit delegation handled via attachPostEventDelegation
 
   async function onCommentSubmit(form) {
     const postCard = form.closest('.post-card');
