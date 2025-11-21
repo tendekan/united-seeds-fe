@@ -87,11 +87,7 @@ function getAuthHeaders() {
   }
 
   function normalizeUserId(id) {
-    const str = String(id ?? '').trim();
-    if (!str) return '';
-    if (/^[0-9]+$/.test(str)) return str;
-    const digits = str.replace(/\D/g, '');
-    return digits;
+    return String(id ?? '').trim();
   }
 
   // ---------- App State ----------
@@ -103,6 +99,7 @@ function getAuthHeaders() {
   let activeProfileUserId = null;
   let activeProfileData = null;
   let activeProfileDisplayName = '';
+  let isViewingOwnProfile = false;
 
   function resetLikeCaches() {
     Object.keys(postLikeState).forEach(key => delete postLikeState[key]);
@@ -356,11 +353,11 @@ function getAuthHeaders() {
     const link = event.target.closest && event.target.closest('.user-profile-link');
     if (!link) return;
     event.preventDefault();
-    const userId = link.dataset.userId;
+    const userId = link.dataset.userRawId || link.dataset.userId;
     const encodedName = link.dataset.userName || '';
     const displayName = encodedName ? decodeURIComponent(encodedName) : link.textContent;
     if (userId) {
-      openProfile(userId, { displayName });
+      openProfile(userId, { displayName, forceReload: true });
     } else {
       showToast('Профилът не е наличен.');
     }
@@ -469,9 +466,13 @@ function getAuthHeaders() {
       openAuthModal('Влез');
       return;
     }
-    const userId = getSafeUserId();
-    if (!userId || normalizeUserId(userId) !== normalizeUserId(activeProfileUserId)) {
+    if (!isViewingOwnProfile) {
       showToast('Можете да редактирате само своя профил.');
+      return;
+    }
+    const targetUserId = normalizeUserId(activeProfileUserId || activeProfileData?.userId || getSafeUserId());
+    if (!targetUserId) {
+      showToast('Профилът не е наличен.');
       return;
     }
     const payload = {
@@ -481,7 +482,8 @@ function getAuthHeaders() {
     };
     showGlobalSpinner(true);
     try {
-      const updated = await updateUserProfile(userId, payload);
+      const updated = await updateUserProfile(targetUserId, payload);
+      activeProfileUserId = normalizeUserId(updated?.userId || targetUserId);
       activeProfileData = updated;
       renderProfileView(updated);
       showToast('Профилът беше обновен.');
@@ -508,6 +510,7 @@ function getAuthHeaders() {
     if (profileDobDisplay) profileDobDisplay.textContent = profile?.dateOfBirth ? formatProfileDate(profile.dateOfBirth) : '-';
     if (profileResidencyDisplay) profileResidencyDisplay.textContent = profile?.residency?.trim() || '-';
     const isOwnProfile = normalizeUserId(getSafeUserId()) === normalizeUserId(userId);
+    isViewingOwnProfile = isOwnProfile;
     if (profileForm) {
       if (isOwnProfile) {
         profileForm.classList.remove('hidden');
@@ -521,7 +524,7 @@ function getAuthHeaders() {
     const posts = Array.isArray(profile?.posts) ? profile.posts : [];
     const retweets = Array.isArray(profile?.retweets) ? profile.retweets : [];
     if (profilePostsCount) profilePostsCount.textContent = posts.length ? `${posts.length} общо` : 'Няма публикации';
-    if (profileRetweetsCount) profileRetweetsCount.textContent = retweets.length ? `${retweets.length} общо` : 'Няма ретуитове';
+    if (profileRetweetsCount) profileRetweetsCount.textContent = retweets.length ? `${retweets.length} общо` : 'Няма споделяния';
     renderProfilePostsList(posts);
     renderProfileRetweetsList(retweets);
   }
@@ -555,7 +558,7 @@ function getAuthHeaders() {
   function renderProfileRetweetsList(items) {
     if (!profileRetweetsList) return;
     if (!items.length) {
-      profileRetweetsList.innerHTML = '<div class="muted">Няма ретуитнати публикации.</div>';
+      profileRetweetsList.innerHTML = '<div class="muted">Няма споделени публикации.</div>';
       return;
     }
     const frag = document.createDocumentFragment();
@@ -563,7 +566,7 @@ function getAuthHeaders() {
       const post = entry.post || {};
       const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', post.userId, 'owner-name');
       const retweetDate = formatDateTimeSafe(entry.retweetedAt);
-      const retweetedMeta = retweetDate ? `Ретуитнато на ${retweetDate}` : 'Ретуитнато';
+      const retweetedMeta = retweetDate ? `Споделено на ${retweetDate}` : 'Споделено';
       const tags = post.category ? `<div class="tags"><span class="tag">${escapeHtml(post.category)}</span>${post.subcategory ? `<span class="tag">${escapeHtml(post.subcategory)}</span>` : ''}</div>` : '';
       const el = document.createElement('div');
       el.className = 'post-card';
@@ -585,6 +588,7 @@ function getAuthHeaders() {
   }
 
   function setProfileLoadingState() {
+    isViewingOwnProfile = false;
     if (profileForm) profileForm.classList.add('hidden');
     if (profileBioDisplay) profileBioDisplay.textContent = 'Зареждане...';
     if (profileDobDisplay) profileDobDisplay.textContent = '...';
@@ -594,12 +598,13 @@ function getAuthHeaders() {
   }
 
   function setProfileErrorState() {
+    isViewingOwnProfile = false;
     if (profileForm) profileForm.classList.add('hidden');
     if (profileBioDisplay) profileBioDisplay.textContent = 'Няма данни.';
     if (profileDobDisplay) profileDobDisplay.textContent = '-';
     if (profileResidencyDisplay) profileResidencyDisplay.textContent = '-';
     if (profilePostsList) profilePostsList.innerHTML = '<div class="muted">Неуспешно зареждане на публикациите.</div>';
-    if (profileRetweetsList) profileRetweetsList.innerHTML = '<div class="muted">Неуспешно зареждане на ретуитовете.</div>';
+    if (profileRetweetsList) profileRetweetsList.innerHTML = '<div class="muted">Неуспешно зареждане на споделянията.</div>';
   }
 
   function formatProfileDate(dateStr) {
@@ -1075,7 +1080,7 @@ function getAuthHeaders() {
       el.className = 'post-card';
       const canLike = canUseBackendId(p.id);
       const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
-      const retweetButtonAttrs = canLike ? '' : 'disabled title="Ретуитите са налични само за публикации от сървъра"';
+      const retweetButtonAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
       const authorMarkup = buildUserProfileLabel(p.author?.name, p.author?.userId || p.author?.id, 'owner-name');
       const authorPhoto = p.author?.photoUrl || getAvatarPlaceholder(p.author?.name);
       const authorName = escapeHtml(p.author?.name || 'Потребител');
@@ -1097,7 +1102,7 @@ function getAuthHeaders() {
           </button>
           <button class="btn btn-secondary btn-sm btn-retweet-post" data-post-id="${p.id}" ${retweetButtonAttrs}>
             <span class="retweet-icon" aria-hidden="true">⟳</span>
-            <span class="retweet-label">Ретуитни</span>
+            <span class="retweet-label">Сподели</span>
             <span class="retweet-count-badge">0</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
@@ -1633,7 +1638,7 @@ function getAuthHeaders() {
     if (!button) return;
     const label = button.querySelector('.retweet-label');
     const countBadge = button.querySelector('.retweet-count-badge');
-    if (label) label.textContent = state?.retweeted ? 'Ретуитнато' : 'Ретуитни';
+    if (label) label.textContent = state?.retweeted ? 'Споделено' : 'Сподели';
     if (countBadge) countBadge.textContent = Number(state?.count) || 0;
     button.classList.toggle('is-retweeted', Boolean(state?.retweeted));
   }
@@ -1642,7 +1647,7 @@ function getAuthHeaders() {
     if (!button) return;
     const postId = button.dataset.postId;
     if (!canUseBackendId(postId)) {
-      showToast('Ретуитите са налични само за публикации от сървъра.');
+      showToast('Споделянето е налично само за публикации от сървъра.');
       return;
     }
     if (!authState) {
@@ -1651,7 +1656,7 @@ function getAuthHeaders() {
     }
     const userId = getSafeUserId();
     if (!userId) {
-      showToast('Неуспешно ретуитване.');
+      showToast('Неуспешно споделяне.');
       return;
     }
     button.disabled = true;
@@ -1673,7 +1678,7 @@ function getAuthHeaders() {
       }
     } catch (error) {
       console.error('Failed to toggle retweet:', error);
-      showToast('Неуспешно ретуитване.');
+      showToast('Неуспешно споделяне.');
     } finally {
       button.disabled = false;
     }
@@ -2093,7 +2098,7 @@ function getAuthHeaders() {
       el.className = 'post-card';
       const canLike = canUseBackendId(p.id);
       const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
-      const retweetButtonAttrs = canLike ? '' : 'disabled title="Ретуитите са налични само за публикации от сървъра"';
+      const retweetButtonAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
       const authorMarkup = buildUserProfileLabel(p.facebookName || p.userId || 'Потребител', p.userId, 'owner-name');
       el.innerHTML = `
         <div class="post-header">
@@ -2112,7 +2117,7 @@ function getAuthHeaders() {
           </button>
           <button class="btn btn-secondary btn-sm btn-retweet-post" data-post-id="${p.id}" ${retweetButtonAttrs}>
             <span class="retweet-icon" aria-hidden="true">⟳</span>
-            <span class="retweet-label">Ретуитни</span>
+            <span class="retweet-label">Сподели</span>
             <span class="retweet-count-badge">0</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
@@ -2349,14 +2354,20 @@ function getAuthHeaders() {
     return (str || '').replace(/[&<>"]+/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
+  function escapeAttribute(str) {
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return (str || '').replace(/[&<>"']/g, c => map[c] || c);
+  }
+
   function buildUserProfileLabel(name, userId, className = 'owner-name') {
     const safeName = escapeHtml(name || 'Потребител');
-    const normalizedId = normalizeUserId(userId);
+    const rawId = userId !== undefined && userId !== null ? String(userId).trim() : '';
+    const normalizedId = normalizeUserId(rawId);
     if (!normalizedId) {
       return `<span class="${className}">${safeName}</span>`;
     }
     const encodedName = encodeURIComponent(name || '');
-    return `<button type="button" class="user-profile-link ${className}" data-user-id="${normalizedId}" data-user-name="${encodedName}">${safeName}</button>`;
+    return `<button type="button" class="user-profile-link ${className}" data-user-id="${escapeAttribute(normalizedId)}" data-user-raw-id="${escapeAttribute(rawId)}" data-user-name="${encodedName}">${safeName}</button>`;
   }
 
   function getAvatarPlaceholder(name) {
