@@ -98,6 +98,7 @@ function getAuthHeaders() {
   let authState = loadFromStorage(STORAGE_KEYS.auth, null);
   let skills = loadFromStorage(STORAGE_KEYS.skills, []);
   const postLikeState = {};
+  const postCommentCountState = {};
   const postRetweetState = {};
   const commentLikeState = {};
   let activeProfileUserId = null;
@@ -108,6 +109,7 @@ function getAuthHeaders() {
 
   function resetLikeCaches() {
     Object.keys(postLikeState).forEach(key => delete postLikeState[key]);
+    Object.keys(postCommentCountState).forEach(key => delete postCommentCountState[key]);
     Object.keys(postRetweetState).forEach(key => delete postRetweetState[key]);
     Object.keys(commentLikeState).forEach(key => delete commentLikeState[key]);
   }
@@ -644,13 +646,19 @@ function getAuthHeaders() {
       return;
     }
     const frag = document.createDocumentFragment();
+    const idsNeedingHydration = [];
     entries.forEach(entry => {
-      frag.appendChild(buildProfilePostCard(entry, isRetweet));
+      const card = buildProfilePostCard(entry, isRetweet);
+      frag.appendChild(card);
+      const hasCount = typeof entry?.commentCount === 'number' || Array.isArray(entry?.comments);
+      const postId = (entry?.post || entry || {}).id;
+      if (!hasCount && postId) idsNeedingHydration.push(postId);
     });
     container.innerHTML = '';
     container.appendChild(frag);
     initializePostLikeButtons(container);
     initializePostRetweetButtons(container);
+    idsNeedingHydration.forEach(id => hydratePostCommentCount(id));
   }
 
   function buildProfilePostCard(entry, forceRetweetBadge = false) {
@@ -725,9 +733,26 @@ function getAuthHeaders() {
   function buildPostStats(entry, overrides = {}) {
     const base = entry?.post || entry || {};
     const postId = base.id ?? entry?.id ?? '';
-    const likeCount = safeCount(overrides.likes ?? entry?.likeCount ?? (entry?.likes?.length ?? 0));
-    const commentCount = safeCount(overrides.comments ?? entry?.commentCount ?? (entry?.comments?.length ?? 0));
-    const shareCount = safeCount(overrides.shares ?? entry?.shareCount ?? 0);
+    const likeCount = safeCount(
+      overrides.likes ??
+      entry?.likeCount ??
+      (Array.isArray(entry?.likes) ? entry.likes.length : undefined) ??
+      postLikeState[postId]?.count ??
+      0
+    );
+    const commentCount = safeCount(
+      overrides.comments ??
+      entry?.commentCount ??
+      (Array.isArray(entry?.comments) ? entry.comments.length : undefined) ??
+      postCommentCountState[postId] ??
+      0
+    );
+    const shareCount = safeCount(
+      overrides.shares ??
+      entry?.shareCount ??
+      postRetweetState[postId]?.count ??
+      0
+    );
     const text = formatStatsText(likeCount, commentCount, shareCount);
     return `
       <div class="post-meta post-stats" data-post-id="${postId}" data-likes="${likeCount}" data-comments="${commentCount}" data-shares="${shareCount}">
@@ -752,11 +777,27 @@ function getAuthHeaders() {
       const shares = Number(node.dataset.shares || 0);
       node.textContent = formatStatsText(likes, comments, shares);
     });
+    if (counts.comments !== undefined) postCommentCountState[postId] = safeCount(counts.comments);
   }
 
   function safeCount(value) {
     const num = Number(value);
     return Number.isFinite(num) ? num : 0;
+  }
+
+  async function hydratePostCommentCount(postId) {
+    if (!postId || !canUseBackendId(postId)) return;
+    if (postCommentCountState[postId] !== undefined) {
+      updatePostStatsDisplay(postId, { comments: postCommentCountState[postId] });
+      return;
+    }
+    try {
+      const count = await fetchCommentCountOnly(postId);
+      postCommentCountState[postId] = count;
+      updatePostStatsDisplay(postId, { comments: count });
+    } catch (error) {
+      console.warn('Failed to hydrate comment count for post', postId, error);
+    }
   }
 
   function setProfileLoadingState() {
@@ -1310,6 +1351,7 @@ function getAuthHeaders() {
     if (postsPagination) postsPagination.classList.add('hidden');
     initializePostLikeButtons(postsList);
     initializePostRetweetButtons(postsList);
+    posts.forEach(p => hydratePostCommentCount(p.id));
   }
 
   async function toggleComments(button) {
@@ -1741,6 +1783,17 @@ function getAuthHeaders() {
     return Array.isArray(data) ? data : [];
   }
 
+  async function fetchCommentCountOnly(postId) {
+    const url = `${BACKEND_URL}/posts/${postId}/comments?page=1&size=1&sortOrder=desc`;
+    const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
+    if (!resp.ok) throw new Error('Failed to fetch comment count');
+    const data = await resp.json();
+    if (Array.isArray(data)) return data.length;
+    if (typeof data.total === 'number') return data.total;
+    if (Array.isArray(data.comments)) return data.comments.length;
+    return 0;
+  }
+
   async function hasUserLikedPost(postId) {
     const userId = getSafeUserId();
     if (!userId) return false;
@@ -1871,6 +1924,7 @@ function getAuthHeaders() {
     const countPromise = fetchPostRetweetCount(postId);
     const retweetedPromise = authState ? hasUserRetweetedPost(postId) : Promise.resolve(false);
     const [count, retweeted] = await Promise.all([countPromise, retweetedPromise]);
+    updatePostStatsDisplay(postId, { shares: count });
     return { count, retweeted };
   }
 
@@ -2347,6 +2401,7 @@ function getAuthHeaders() {
     postsList.appendChild(frag);
     initializePostLikeButtons(postsList);
     initializePostRetweetButtons(postsList);
+    items.forEach(p => hydratePostCommentCount(p.id));
   }
 
   async function requestSignedDownloadUrl(fileName) {
