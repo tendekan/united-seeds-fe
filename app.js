@@ -101,7 +101,6 @@ function getAuthHeaders() {
   const postCommentCountState = {};
   const postRetweetState = {};
   const commentLikeState = {};
-  const postOwnerCache = {};
   let activeProfileUserId = null;
   let activeProfileData = null;
   let activeProfileDisplayName = '';
@@ -110,7 +109,6 @@ function getAuthHeaders() {
 
   function resetLikeCaches() {
     Object.keys(postLikeState).forEach(key => delete postLikeState[key]);
-    Object.keys(postOwnerCache).forEach(key => delete postOwnerCache[key]);
     Object.keys(postCommentCountState).forEach(key => delete postCommentCountState[key]);
     Object.keys(postRetweetState).forEach(key => delete postRetweetState[key]);
     Object.keys(commentLikeState).forEach(key => delete commentLikeState[key]);
@@ -454,6 +452,10 @@ function getAuthHeaders() {
       return;
     }
     const userId = getSafeUserId();
+    if (normalizeUserId(userId) === normalizeUserId(postIdOwner(postId))) {
+      showToast('Не можете да споделите собствена публикация.', 'error');
+      return;
+    }
     if (!userId) {
       showToast('Неуспешно зареждане на профила.', 'error');
       return;
@@ -671,8 +673,6 @@ function getAuthHeaders() {
     const retweetAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
     const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', post.userId, 'owner-name');
     const stats = buildPostStats(envelope);
-    const ownerId = normalizeUserId(post.userId);
-    rememberPostOwner(post.id, ownerId);
     const retweetInfo = forceRetweetBadge || envelope.retweet
       ? `<div class="retweet-badge">${envelope.retweetedAt ? `Споделено на ${formatDateTimeSafe(envelope.retweetedAt)}` : 'Споделено'}</div>`
       : '';
@@ -680,7 +680,6 @@ function getAuthHeaders() {
     const el = document.createElement('div');
     el.className = 'post-card';
     el.setAttribute('data-post-id', post.id);
-    if (ownerId) el.dataset.ownerId = ownerId;
     el.innerHTML = `
       <div class="post-header">
         <div>
@@ -767,9 +766,6 @@ function getAuthHeaders() {
   }
 
   function formatStatsText(likes, comments, shares) {
-    if (postId && commentCount !== undefined) {
-      postCommentCountState[postId] = commentCount;
-    }
     return `Харесвания: ${likes} • Коментари: ${comments} • Споделяния: ${shares}`;
   }
 
@@ -1305,9 +1301,6 @@ function getAuthHeaders() {
       const retweetButtonAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
       const authorMarkup = buildUserProfileLabel(p.author?.name, p.author?.userId || p.author?.id, 'owner-name');
       const authorPhoto = p.author?.photoUrl || getAvatarPlaceholder(p.author?.name);
-      const ownerId = normalizeUserId(p.author?.userId || p.author?.id || authState?.userId);
-      rememberPostOwner(p.id, ownerId);
-      if (ownerId) el.dataset.ownerId = ownerId;
       const authorName = escapeHtml(p.author?.name || 'Потребител');
       const shareCount = safeCount(p.shareCount ?? 0);
       const stats = buildPostStats(p);
@@ -1906,7 +1899,7 @@ function getAuthHeaders() {
       showToast('Неуспешно споделяне.', 'error');
       return;
     }
-    if (isCurrentUserPostOwner(postId)) {
+    if (normalizeUserId(getPostOwnerId(postId)) === normalizeUserId(userId)) {
       showToast('Не можете да споделите собствена публикация.', 'error');
       return;
     }
@@ -1965,7 +1958,6 @@ function getAuthHeaders() {
   async function retweetPost(postId, userIdOverride) {
     const userId = normalizeUserId(userIdOverride || getSafeUserId());
     if (!userId) throw new Error('Missing user id');
-    if (isCurrentUserPostOwner(postId)) throw new Error('Cannot share own post');
     const resp = await sendRetweetRequest(postId, userId, 'POST');
     if (!resp.ok) throw new Error('Failed to retweet post');
   }
@@ -2359,9 +2351,6 @@ function getAuthHeaders() {
       const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
       const retweetButtonAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
       const authorMarkup = buildUserProfileLabel(p.facebookName || p.userId || 'Потребител', p.userId, 'owner-name');
-      const ownerId = normalizeUserId(p.userId);
-      rememberPostOwner(p.id, ownerId);
-      if (ownerId) el.dataset.ownerId = ownerId;
       const shareCount = safeCount(p.shareCount ?? 0);
       const stats = buildPostStats(p);
       el.innerHTML = `
@@ -2634,24 +2623,6 @@ function getAuthHeaders() {
     }
     const encodedName = encodeURIComponent(name || '');
     return `<button type="button" class="user-profile-link ${className}" data-user-id="${escapeAttribute(normalizedId)}" data-user-raw-id="${escapeAttribute(rawId)}" data-user-name="${encodedName}">${safeName}</button>`;
-  }
-
-  function rememberPostOwner(postId, ownerId) {
-    if (!postId || !ownerId) return;
-    postOwnerCache[postId] = ownerId;
-  }
-
-  function getPostOwnerId(postId) {
-    if (!postId) return null;
-    const card = document.querySelector(`.post-card[data-post-id="${postId}"]`);
-    if (card && card.dataset.ownerId) return card.dataset.ownerId;
-    return postOwnerCache[postId] || null;
-  }
-
-  function isCurrentUserPostOwner(postId) {
-    const owner = normalizeUserId(getPostOwnerId(postId));
-    const current = normalizeUserId(getSafeUserId());
-    return owner && current && owner === current;
   }
 
   function getAvatarPlaceholder(name) {
