@@ -1782,7 +1782,7 @@ function getAuthHeaders() {
   async function retweetPost(postId, userIdOverride) {
     const userId = normalizeUserId(userIdOverride || getSafeUserId());
     if (!userId) throw new Error('Missing user id');
-    const params = new URLSearchParams({ userId, userName: authState?.name || 'Потребител' });
+    const params = new URLSearchParams({ userId });
     const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
       method: 'POST',
       headers: { 'accept': '*/*', ...getAuthHeaders() }
@@ -1793,10 +1793,7 @@ function getAuthHeaders() {
   async function undoRetweet(postId, userIdOverride) {
     const userId = normalizeUserId(userIdOverride || getSafeUserId());
     if (!userId) throw new Error('Missing user id');
-    const params = new URLSearchParams({
-      userId,
-      userName: authState?.name || 'Потребител'
-    });
+    const params = new URLSearchParams({ userId });
     const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
       method: 'DELETE',
       headers: { 'accept': '*/*', ...getAuthHeaders() }
