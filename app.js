@@ -71,15 +71,10 @@ function getAuthHeaders() {
 
   function getSafeUserId() {
     if (!authState) return null;
-    let raw = authState.userId ?? Math.floor(Math.random() * 1000000);
-    let str = String(raw).replace(/\D/g, '');
-    if (!str) {
-      str = String(Math.floor(Math.random() * 1000000));
-    }
-    if (str.length > 18) {
-      str = str.slice(-18);
-    }
-    return str;
+    const raw = authState.serverUserId ?? authState.userId ?? '';
+    const normalized = normalizeUserId(raw);
+    if (normalized) return normalized;
+    return String(Math.floor(Math.random() * 1000000));
   }
 
   function canUseBackendId(id) {
@@ -87,7 +82,16 @@ function getAuthHeaders() {
   }
 
   function normalizeUserId(id) {
-    return String(id ?? '').trim();
+    if (id === undefined || id === null) return '';
+    return String(id).trim();
+  }
+
+  function updateStoredCanonicalUserId(rawId) {
+    if (!authState) return;
+    const normalized = normalizeUserId(rawId);
+    if (!normalized || authState.serverUserId === normalized) return;
+    authState.serverUserId = normalized;
+    saveToStorage(STORAGE_KEYS.auth, authState);
   }
 
   // ---------- App State ----------
@@ -411,28 +415,50 @@ function getAuthHeaders() {
     openProfile(userId, { displayName: activeProfileDisplayName, forceReload: true });
   }
 
-  async function openProfile(userId, { displayName = '', forceReload = false } = {}) {
+  async function openProfile(userId, { displayName = '', forceReload = false, skipCanonicalSync = false, keepLoadingState = false } = {}) {
     const normalizedId = normalizeUserId(userId);
     if (!normalizedId) {
       showToast('Профилът не е наличен.');
       return;
     }
+    const viewerId = normalizeUserId(getSafeUserId());
+    const isOwnRequest = viewerId && viewerId === normalizedId;
     activeProfileUserId = normalizedId;
     if (displayName) {
       activeProfileDisplayName = displayName;
-    } else if (normalizeUserId(getSafeUserId()) === normalizedId) {
+    } else if (isOwnRequest) {
       activeProfileDisplayName = authState?.name || '';
     } else {
       activeProfileDisplayName = '';
     }
     showSection('profile');
-    setProfileLoadingState();
-    if (activeProfileData && !forceReload && String(activeProfileData.userId) === normalizedId) {
+    if (!keepLoadingState) {
+      setProfileLoadingState();
+    }
+    if (activeProfileData && !forceReload && normalizeUserId(activeProfileData.userId) === normalizedId) {
       renderProfileView(activeProfileData);
       return;
     }
     try {
       const profile = await fetchUserProfile(normalizedId);
+      const canonicalId = normalizeUserId(profile?.userId);
+      if (!skipCanonicalSync && canonicalId && canonicalId !== normalizedId) {
+        activeProfileUserId = canonicalId;
+        if (isOwnRequest) {
+          updateStoredCanonicalUserId(canonicalId);
+        }
+        await openProfile(canonicalId, {
+          displayName: activeProfileDisplayName || displayName,
+          forceReload: true,
+          skipCanonicalSync: true,
+          keepLoadingState: true
+        });
+        return;
+      }
+      if (isOwnRequest && canonicalId) {
+        updateStoredCanonicalUserId(canonicalId);
+      }
+      activeProfileUserId = canonicalId || normalizedId;
       activeProfileData = profile;
       renderProfileView(profile);
     } catch (error) {
@@ -498,7 +524,8 @@ function getAuthHeaders() {
   function renderProfileView(profile) {
     if (!profileView) return;
     const userId = profile?.userId ? String(profile.userId) : activeProfileUserId;
-    if (!activeProfileDisplayName && authState && userId && normalizeUserId(getSafeUserId()) === normalizeUserId(userId)) {
+    const normalizedProfileId = normalizeUserId(userId);
+    if (!activeProfileDisplayName && authState && userId && normalizeUserId(getSafeUserId()) === normalizedProfileId) {
       activeProfileDisplayName = authState.name || '';
     }
     const heading = activeProfileDisplayName ||
@@ -509,8 +536,11 @@ function getAuthHeaders() {
     if (profileBioDisplay) profileBioDisplay.textContent = profile?.bio?.trim() || 'Няма биография.';
     if (profileDobDisplay) profileDobDisplay.textContent = profile?.dateOfBirth ? formatProfileDate(profile.dateOfBirth) : '-';
     if (profileResidencyDisplay) profileResidencyDisplay.textContent = profile?.residency?.trim() || '-';
-    const isOwnProfile = normalizeUserId(getSafeUserId()) === normalizeUserId(userId);
+    const isOwnProfile = normalizeUserId(getSafeUserId()) === normalizedProfileId;
     isViewingOwnProfile = isOwnProfile;
+    if (isOwnProfile) {
+      updateStoredCanonicalUserId(userId);
+    }
     if (profileForm) {
       if (isOwnProfile) {
         profileForm.classList.remove('hidden');
@@ -960,7 +990,7 @@ function getAuthHeaders() {
 
       const payload = {
         id: twoDigit(Math.floor(Date.now() / 1000)),
-        userId: safeUserId ? Number(safeUserId) : undefined,
+        userId: safeUserId || undefined,
         facebookName: authState.name || '',
         category: categoryLabel || '',
         subcategory: newLocalPost.subcategory || '',
@@ -1784,7 +1814,7 @@ function getAuthHeaders() {
 
       const payload = {
         postId: Number(postId),
-        userId: Number(userId),
+        userId: userId,
         commentText: text,
         userName: authState.name
       };
@@ -2525,7 +2555,14 @@ function getAuthHeaders() {
 
   // ---------- Shared auth helper ----------
   function signInWithProfile(profile) {
-    authState = profile;
+    const canonicalId = normalizeUserId(profile.serverUserId ?? profile.userId);
+    authState = {
+      ...profile,
+      serverUserId: canonicalId || profile.serverUserId
+    };
+    if (!authState.userId && canonicalId) {
+      authState.userId = canonicalId;
+    }
     saveToStorage(STORAGE_KEYS.auth, authState);
     resetLikeCaches();
     renderAuthUI();
