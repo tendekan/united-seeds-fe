@@ -2044,24 +2044,11 @@ function getAuthHeaders() {
       showToast('Не можете да редактирате тази публикация.', 'error');
       return;
     }
+    const card = button.closest('.post-card');
+    if (!card || card.dataset.postEditing === 'true') return;
     try {
       const existing = await ensurePostData(postId);
-      const currentText = existing?.postText || existing?.text || '';
-      const newText = prompt('Редактирай публикацията', currentText);
-      if (newText === null) return;
-      const trimmed = newText.trim();
-      if (!trimmed) {
-        showToast('Публикацията не може да бъде празна.', 'error');
-        return;
-      }
-      if (trimmed === currentText.trim()) return;
-      const payload = buildPostUpdatePayload(existing, { postText: trimmed });
-      const updated = await updatePostRequest(postId, payload);
-      cachePostData(updated || payload);
-      updatePostTextInDom(postId, trimmed);
-      syncLocalPostEdit(postId, trimmed);
-      showToast('Публикацията беше обновена.');
-      refreshPostContextsAfterChange();
+      startInlinePostEdit(card, postId, existing, button);
     } catch (error) {
       console.error('Failed to edit post', error);
       showToast('Неуспешно обновяване на публикацията.', 'error');
@@ -2876,6 +2863,82 @@ function getAuthHeaders() {
     if (profileView && !profileView.classList.contains('hidden') && activeProfileUserId) {
       openProfile(activeProfileUserId, { displayName: activeProfileDisplayName, forceReload: true });
     }
+  }
+
+  function startInlinePostEdit(card, postId, existingData, triggerBtn) {
+    const textEl = card.querySelector('.post-text');
+    if (!textEl) return;
+    const currentText = existingData?.postText || existingData?.text || textEl.textContent || '';
+    card.dataset.postEditing = 'true';
+    if (triggerBtn) triggerBtn.disabled = true;
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'post-edit-textarea';
+    textarea.value = currentText;
+
+    const actions = document.createElement('div');
+    actions.className = 'post-edit-actions';
+    const btnSave = document.createElement('button');
+    btnSave.type = 'button';
+    btnSave.className = 'btn btn-sm';
+    btnSave.textContent = 'Запази';
+    const btnCancel = document.createElement('button');
+    btnCancel.type = 'button';
+    btnCancel.className = 'btn btn-secondary btn-sm';
+    btnCancel.textContent = 'Откажи';
+    actions.appendChild(btnCancel);
+    actions.appendChild(btnSave);
+
+    const originalContent = textEl.innerHTML;
+    textEl.innerHTML = '';
+    textEl.appendChild(textarea);
+    textEl.appendChild(actions);
+    textarea.focus();
+
+    const cleanup = (newText) => {
+      card.dataset.postEditing = '';
+      if (triggerBtn) triggerBtn.disabled = false;
+      if (newText !== undefined) {
+        textEl.textContent = newText;
+      } else {
+        textEl.innerHTML = originalContent;
+      }
+    };
+
+    btnCancel.addEventListener('click', () => cleanup());
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        cleanup();
+      }
+    });
+
+    btnSave.addEventListener('click', async () => {
+      const trimmed = textarea.value.trim();
+      if (!trimmed) {
+        showToast('Публикацията не може да бъде празна.', 'error');
+        return;
+      }
+      if (trimmed === currentText.trim()) {
+        cleanup(currentText);
+        return;
+      }
+      btnSave.disabled = true;
+      btnCancel.disabled = true;
+      try {
+        const payload = buildPostUpdatePayload(existingData, { postText: trimmed });
+        const updated = await updatePostRequest(postId, payload);
+        cachePostData(updated || payload);
+        updatePostTextInDom(postId, trimmed);
+        syncLocalPostEdit(postId, trimmed);
+        cleanup(trimmed);
+        showToast('Публикацията беше обновена.');
+        refreshPostContextsAfterChange();
+      } catch (error) {
+        console.error('Failed to edit post', error);
+        showToast('Неуспешно обновяване на публикацията.', 'error');
+        cleanup(currentText);
+      }
+    });
   }
 
   function getAvatarPlaceholder(name) {
