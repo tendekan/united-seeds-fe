@@ -688,7 +688,7 @@ function getAuthHeaders() {
     cachePostData({ ...post, userId: ownerId });
     const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', ownerId, 'owner-name');
     const stats = buildPostStats(envelope);
-    const currentUserId = normalizeUserId(getSafeUserId());
+    const currentUserId = getSafeUserId();
     const retweetInfo = forceRetweetBadge || envelope.retweet
       ? `<div class="retweet-badge">${envelope.retweetedAt ? `Споделено на ${formatDateTimeSafe(envelope.retweetedAt)}` : 'Споделено'}</div>`
       : '';
@@ -2767,8 +2767,8 @@ function getAuthHeaders() {
   }
 
   function isCurrentUserPostOwner(postId) {
-    const owner = normalizeUserId(getPostOwnerId(postId));
-    const current = normalizeUserId(getSafeUserId());
+    const owner = getPostOwnerId(postId);
+    const current = getSafeUserId();
     return owner && current && owner === current;
   }
 
