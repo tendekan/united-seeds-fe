@@ -104,6 +104,7 @@ function getAuthHeaders() {
   let activeProfileData = null;
   let activeProfileDisplayName = '';
   let isViewingOwnProfile = false;
+  let isProfileEditing = false;
 
   function resetLikeCaches() {
     Object.keys(postLikeState).forEach(key => delete postLikeState[key]);
@@ -157,7 +158,10 @@ function getAuthHeaders() {
   const profileBioDisplay = document.getElementById('profile-bio-display');
   const profileDobDisplay = document.getElementById('profile-dob-display');
   const profileResidencyDisplay = document.getElementById('profile-residency-display');
-  const profileForm = document.getElementById('profile-form');
+  const btnProfileEdit = document.getElementById('btn-profile-edit');
+  const btnProfileSave = document.getElementById('btn-save-profile');
+  const btnProfileCancel = document.getElementById('btn-cancel-profile');
+  const profileEditActions = document.getElementById('profile-edit-actions');
   const profileBioInput = document.getElementById('profile-bio-input');
   const profileDobInput = document.getElementById('profile-dob-input');
   const profileResidencyInput = document.getElementById('profile-residency-input');
@@ -342,7 +346,14 @@ function getAuthHeaders() {
     if (navDating) navDating.addEventListener('click', () => showSection('dating'));
     if (navSettings) navSettings.addEventListener('click', () => showSection('settings'));
     if (btnPost) btnPost.addEventListener('click', onCreatePost);
-    if (profileForm) profileForm.addEventListener('submit', onProfileFormSubmit);
+    if (btnProfileEdit) btnProfileEdit.addEventListener('click', enterProfileEditMode);
+    if (btnProfileSave) btnProfileSave.addEventListener('click', onProfileSave);
+    if (btnProfileCancel) btnProfileCancel.addEventListener('click', () => {
+      exitProfileEditMode();
+      if (activeProfileData) {
+        renderProfileView(activeProfileData);
+      }
+    });
     if (btnProfileRefresh) btnProfileRefresh.addEventListener('click', () => {
       if (activeProfileUserId) {
         openProfile(activeProfileUserId, { displayName: activeProfileDisplayName, forceReload: true });
@@ -363,7 +374,7 @@ function getAuthHeaders() {
     if (userId) {
       openProfile(userId, { displayName, forceReload: true });
     } else {
-      showToast('Профилът не е наличен.');
+      showToast('Профилът не е наличен.', 'error');
     }
   });
 
@@ -408,7 +419,7 @@ function getAuthHeaders() {
     }
     const userId = getSafeUserId();
     if (!userId) {
-      showToast('Неуспешно зареждане на профила.');
+      showToast('Неуспешно зареждане на профила.', 'error');
       return;
     }
     activeProfileDisplayName = authState.name || '';
@@ -418,7 +429,7 @@ function getAuthHeaders() {
   async function openProfile(userId, { displayName = '', forceReload = false, skipCanonicalSync = false, keepLoadingState = false } = {}) {
     const normalizedId = normalizeUserId(userId);
     if (!normalizedId) {
-      showToast('Профилът не е наличен.');
+      showToast('Профилът не е наличен.', 'error');
       return;
     }
     const viewerId = normalizeUserId(getSafeUserId());
@@ -464,7 +475,7 @@ function getAuthHeaders() {
     } catch (error) {
       console.error('Failed to load profile', error);
       setProfileErrorState();
-      showToast('Неуспешно зареждане на профила.');
+      showToast('Неуспешно зареждане на профила.', 'error');
     }
   }
 
@@ -486,19 +497,49 @@ function getAuthHeaders() {
     return resp.json();
   }
 
-  async function onProfileFormSubmit(event) {
-    event.preventDefault();
+  function syncProfileInputs(source) {
+    if (profileBioInput) profileBioInput.value = source?.bio || '';
+    if (profileDobInput) profileDobInput.value = source?.dateOfBirth || '';
+    if (profileResidencyInput) profileResidencyInput.value = source?.residency || '';
+  }
+
+  function updateProfileEditControls() {
+    if (profileSummary) profileSummary.classList.toggle('is-editing', isProfileEditing);
+    if (profileEditActions) profileEditActions.classList.toggle('hidden', !isProfileEditing);
+    if (btnProfileEdit) btnProfileEdit.classList.toggle('hidden', !isViewingOwnProfile || isProfileEditing);
+  }
+
+  function setProfileEditingState(enabled) {
+    isProfileEditing = Boolean(enabled);
+    updateProfileEditControls();
+  }
+
+  function enterProfileEditMode() {
+    if (!isViewingOwnProfile) {
+      showToast('Можете да редактирате само своя профил.', 'error');
+      return;
+    }
+    syncProfileInputs(activeProfileData);
+    setProfileEditingState(true);
+  }
+
+  function exitProfileEditMode() {
+    setProfileEditingState(false);
+  }
+
+  async function onProfileSave(event) {
+    if (event) event.preventDefault();
     if (!authState) {
       openAuthModal('Влез');
       return;
     }
     if (!isViewingOwnProfile) {
-      showToast('Можете да редактирате само своя профил.');
+      showToast('Можете да редактирате само своя профил.', 'error');
       return;
     }
     const targetUserId = normalizeUserId(activeProfileUserId || activeProfileData?.userId || getSafeUserId());
     if (!targetUserId) {
-      showToast('Профилът не е наличен.');
+      showToast('Профилът не е наличен.', 'error');
       return;
     }
     const payload = {
@@ -513,9 +554,10 @@ function getAuthHeaders() {
       activeProfileData = updated;
       renderProfileView(updated);
       showToast('Профилът беше обновен.');
+      exitProfileEditMode();
     } catch (error) {
       console.error('Failed to update profile', error);
-      showToast('Неуспешно обновяване на профила.');
+      showToast('Неуспешно обновяване на профила.', 'error');
     } finally {
       showGlobalSpinner(false);
     }
@@ -540,16 +582,12 @@ function getAuthHeaders() {
     isViewingOwnProfile = isOwnProfile;
     if (isOwnProfile) {
       updateStoredCanonicalUserId(userId);
+    } else if (isProfileEditing) {
+      exitProfileEditMode();
     }
-    if (profileForm) {
-      if (isOwnProfile) {
-        profileForm.classList.remove('hidden');
-        if (profileBioInput) profileBioInput.value = profile?.bio || '';
-        if (profileDobInput) profileDobInput.value = profile?.dateOfBirth || '';
-        if (profileResidencyInput) profileResidencyInput.value = profile?.residency || '';
-      } else {
-        profileForm.classList.add('hidden');
-      }
+    updateProfileEditControls();
+    if (isProfileEditing) {
+      syncProfileInputs(profile);
     }
     const posts = Array.isArray(profile?.posts) ? profile.posts : [];
     const retweets = Array.isArray(profile?.retweets) ? profile.retweets : [];
@@ -619,7 +657,7 @@ function getAuthHeaders() {
 
   function setProfileLoadingState() {
     isViewingOwnProfile = false;
-    if (profileForm) profileForm.classList.add('hidden');
+    setProfileEditingState(false);
     if (profileBioDisplay) profileBioDisplay.textContent = 'Зареждане...';
     if (profileDobDisplay) profileDobDisplay.textContent = '...';
     if (profileResidencyDisplay) profileResidencyDisplay.textContent = '...';
@@ -629,7 +667,7 @@ function getAuthHeaders() {
 
   function setProfileErrorState() {
     isViewingOwnProfile = false;
-    if (profileForm) profileForm.classList.add('hidden');
+    setProfileEditingState(false);
     if (profileBioDisplay) profileBioDisplay.textContent = 'Няма данни.';
     if (profileDobDisplay) profileDobDisplay.textContent = '-';
     if (profileResidencyDisplay) profileResidencyDisplay.textContent = '-';
@@ -983,7 +1021,7 @@ function getAuthHeaders() {
           uploadedVideoFullName = up.fullName || '';
         } catch (e) {
           console.error('Video upload failed', e);
-          showToast('Video upload failed. Your post was not submitted.');
+          showToast('Video upload failed. Your post was not submitted.', 'error');
           return; // do not proceed with post creation if video upload fails
         }
       }
@@ -1020,7 +1058,7 @@ function getAuthHeaders() {
       console.info('Post sent to API', payload);
     } catch (err) {
       console.error('Failed to send post to API', err);
-      showToast('Неуспешно изпращане на публикацията. Моля, опитайте отново.');
+      showToast('Неуспешно изпращане на публикацията. Моля, опитайте отново.', 'error');
     } finally {
       if (postVideo) postVideo.value = '';
       showGlobalSpinner(false);
@@ -1086,10 +1124,11 @@ function getAuthHeaders() {
     };
   }
 
-  function showToast(message) {
+  function showToast(message, variant = 'success') {
     if (!toast) return;
     toast.textContent = message;
     toast.classList.remove('hidden');
+    toast.style.setProperty('--toast-bg', variant === 'error' ? '#E3655B' : '#388E3C');
     clearTimeout(showToast._t);
     showToast._t = setTimeout(() => {
       toast.classList.add('hidden');
@@ -1455,7 +1494,7 @@ function getAuthHeaders() {
     if (!button) return;
     const postId = button.dataset.postId;
     if (!canUseBackendId(postId)) {
-      showToast('Тази публикация все още не може да бъде харесана.');
+      showToast('Тази публикация все още не може да бъде харесана.', 'error');
       return;
     }
     if (!authState) {
@@ -1473,7 +1512,7 @@ function getAuthHeaders() {
       await refreshPostLikeButton(postId, button);
     } catch (error) {
       console.error('Failed to toggle post like:', error);
-      showToast('Неуспешно обновяване на харесването.');
+      showToast('Неуспешно обновяване на харесването.', 'error');
     } finally {
       button.disabled = false;
     }
@@ -1483,7 +1522,7 @@ function getAuthHeaders() {
     if (!button) return;
     const commentId = button.dataset.commentId;
     if (!canUseBackendId(commentId)) {
-      showToast('Този коментар не е наличен за харесване.');
+      showToast('Този коментар не е наличен за харесване.', 'error');
       return;
     }
     if (!authState) {
@@ -1501,7 +1540,7 @@ function getAuthHeaders() {
       await refreshCommentLikeButton(commentId, button);
     } catch (error) {
       console.error('Failed to toggle comment like:', error);
-      showToast('Неуспешно обновяване на харесването.');
+      showToast('Неуспешно обновяване на харесването.', 'error');
     } finally {
       button.disabled = false;
     }
@@ -1523,7 +1562,7 @@ function getAuthHeaders() {
 
   async function showPostLikesModal(postId) {
     if (!canUseBackendId(postId)) {
-      showToast('Харесванията са налични само за публикации от сървъра.');
+      showToast('Харесванията са налични само за публикации от сървъра.', 'error');
       return;
     }
     openLikesModal('Хора, които харесаха публикацията');
@@ -1539,7 +1578,7 @@ function getAuthHeaders() {
 
   async function showCommentLikesModal(commentId) {
     if (!canUseBackendId(commentId)) {
-      showToast('Харесванията са налични само за коментари от сървъра.');
+      showToast('Харесванията са налични само за коментари от сървъра.', 'error');
       return;
     }
     openLikesModal('Хора, които харесаха коментара');
@@ -1677,7 +1716,7 @@ function getAuthHeaders() {
     if (!button) return;
     const postId = button.dataset.postId;
     if (!canUseBackendId(postId)) {
-      showToast('Споделянето е налично само за публикации от сървъра.');
+      showToast('Споделянето е налично само за публикации от сървъра.', 'error');
       return;
     }
     if (!authState) {
@@ -1686,7 +1725,7 @@ function getAuthHeaders() {
     }
     const userId = getSafeUserId();
     if (!userId) {
-      showToast('Неуспешно споделяне.');
+      showToast('Неуспешно споделяне.', 'error');
       return;
     }
     button.disabled = true;
@@ -1708,7 +1747,7 @@ function getAuthHeaders() {
       }
     } catch (error) {
       console.error('Failed to toggle retweet:', error);
-      showToast('Неуспешно споделяне.');
+      showToast('Неуспешно споделяне.', 'error');
     } finally {
       button.disabled = false;
     }
@@ -1743,7 +1782,7 @@ function getAuthHeaders() {
   async function retweetPost(postId, userIdOverride) {
     const userId = normalizeUserId(userIdOverride || getSafeUserId());
     if (!userId) throw new Error('Missing user id');
-    const params = new URLSearchParams({ userId });
+    const params = new URLSearchParams({ userId, userName: authState?.name || 'Потребител' });
     const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
       method: 'POST',
       headers: { 'accept': '*/*', ...getAuthHeaders() }
@@ -1754,7 +1793,10 @@ function getAuthHeaders() {
   async function undoRetweet(postId, userIdOverride) {
     const userId = normalizeUserId(userIdOverride || getSafeUserId());
     if (!userId) throw new Error('Missing user id');
-    const params = new URLSearchParams({ userId });
+    const params = new URLSearchParams({
+      userId,
+      userName: authState?.name || 'Потребител'
+    });
     const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
       method: 'DELETE',
       headers: { 'accept': '*/*', ...getAuthHeaders() }
@@ -1868,7 +1910,7 @@ function getAuthHeaders() {
 
     } catch (error) {
       console.error('Failed to submit comment:', error);
-      showToast('Неуспешно изпращане на коментар.');
+      showToast('Неуспешно изпращане на коментар.', 'error');
     }
   }
 
@@ -1914,7 +1956,7 @@ function getAuthHeaders() {
     saveBtn.addEventListener('click', async () => {
       const newText = editInput.value.trim();
       if (!newText) {
-        showToast('Коментарът не може да бъде празен.');
+      showToast('Коментарът не може да бъде празен.', 'error');
         return;
       }
       
@@ -1924,7 +1966,7 @@ function getAuthHeaders() {
         showToast('Коментарът беше обновен.');
       } catch (error) {
         console.error('Failed to update comment:', error);
-        showToast('Неуспешно обновяване на коментар.');
+        showToast('Неуспешно обновяване на коментар.', 'error');
         cleanup();
       }
     });
@@ -1966,7 +2008,7 @@ function getAuthHeaders() {
       }
     } catch (error) {
       console.error('Failed to delete comment:', error);
-      showToast('Неуспешно изтриване на коментар.');
+      showToast('Неуспешно изтриване на коментар.', 'error');
     }
   }
 

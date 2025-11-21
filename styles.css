@@ -65,9 +65,25 @@ html, body {
 .main-pane { display: grid; gap: 12px; border-left: 1px solid var(--border); padding: 16px; }
 .profile-view { display: grid; gap: 18px; }
 .profile-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.profile-summary { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: grid; gap: 8px; }
-.summary-label { font-weight: 600; margin-right: 4px; }
-.profile-form { display: grid; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.profile-header-actions { display: flex; gap: 8px; align-items: center; }
+.btn-icon { padding: 8px 10px; min-width: 36px; text-align: center; }
+.profile-summary { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: grid; gap: 16px; }
+.profile-summary .summary-row { display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: flex-start; }
+.summary-content { display: grid; gap: 6px; }
+.profile-summary.is-editing .summary-content { gap: 10px; }
+.summary-label { font-weight: 600; margin-top: 2px; color: var(--muted); }
+.summary-value { color: var(--text); }
+.summary-input { display: none; width: 100%; }
+.summary-input textarea,
+.summary-input input { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--card); font-size: 14px; }
+.profile-summary.is-editing .summary-input { display: block; }
+.profile-summary.is-editing .summary-value { display: none; }
+.profile-edit-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.profile-summary textarea { min-height: 96px; }
+.date-field { position: relative; }
+.date-field input[type="date"] { appearance: none; width: 100%; background: rgba(56, 142, 60, 0.05); border: 1px solid rgba(56,142,60,0.25); border-radius: 10px; padding: 10px 36px 10px 12px; color: var(--text); font-size: 14px; }
+.date-field input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; cursor: pointer; }
+.date-field .date-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 16px; opacity: 0.7; }
 .profile-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
 .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .posts-list.slim { gap: 12px; }
@@ -513,4 +529,8 @@ body { background-size: 200% 200%; animation: bgShift 30s ease infinite; }
   margin: 12px 0;
   padding: 8px 0;
   border-top: 1px solid var(--border);
+}
+@media (max-width: 600px) {
+  .profile-summary .summary-row { grid-template-columns: 1fr; }
+  .summary-label { margin-bottom: 4px; }
 }

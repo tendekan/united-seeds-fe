@@ -107,39 +107,47 @@
                                 <h2 id="profile-view-name">Профил</h2>
                                 <p id="profile-view-meta" class="muted small"></p>
                             </div>
-                            <button id="btn-profile-refresh" class="btn btn-secondary btn-sm" type="button">Опресни</button>
+                            <div class="profile-header-actions">
+                                <button id="btn-profile-edit" class="btn btn-secondary btn-icon hidden" type="button" title="Редактирай профила">✏️</button>
+                                <button id="btn-profile-refresh" class="btn btn-secondary btn-sm" type="button">Опресни</button>
+                            </div>
                         </div>
                         <div id="profile-summary" class="profile-summary">
-                            <div>
+                            <div class="summary-row">
                                 <span class="summary-label">Био:</span>
-                                <span id="profile-bio-display">Няма биография.</span>
+                                <div class="summary-content">
+                                    <span id="profile-bio-display" class="summary-value">Няма биография.</span>
+                                    <div class="summary-input">
+                                        <textarea id="profile-bio-input" rows="4" placeholder="Разкажете повече за себе си"></textarea>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
+                            <div class="summary-row">
                                 <span class="summary-label">Дата на раждане:</span>
-                                <span id="profile-dob-display">-</span>
+                                <div class="summary-content">
+                                    <span id="profile-dob-display" class="summary-value">-</span>
+                                    <div class="summary-input">
+                                        <div class="date-field">
+                                            <input id="profile-dob-input" type="date">
+                                            <span class="date-icon">📅</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
+                            <div class="summary-row">
                                 <span class="summary-label">Местоживеене:</span>
-                                <span id="profile-residency-display">-</span>
+                                <div class="summary-content">
+                                    <span id="profile-residency-display" class="summary-value">-</span>
+                                    <div class="summary-input">
+                                        <input id="profile-residency-input" type="text" placeholder="Град, държава">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="profile-edit-actions hidden" id="profile-edit-actions">
+                                <button id="btn-cancel-profile" class="btn btn-secondary btn-sm" type="button">Откажи</button>
+                                <button id="btn-save-profile" class="btn btn-sm" type="button">Запази</button>
                             </div>
                         </div>
-                        <form id="profile-form" class="profile-form hidden">
-                            <label>
-                                <span>Био</span>
-                                <textarea id="profile-bio-input" rows="4" placeholder="Разкажете повече за себе си"></textarea>
-                            </label>
-                            <label>
-                                <span>Дата на раждане</span>
-                                <input id="profile-dob-input" type="date">
-                            </label>
-                            <label>
-                                <span>Местоживеене</span>
-                                <input id="profile-residency-input" type="text" placeholder="Град, държава">
-                            </label>
-                            <div class="actions">
-                                <button id="btn-save-profile" class="btn" type="submit">Запази профил</button>
-                            </div>
-                        </form>
                         <div class="profile-section">
                             <div class="section-title">
                                 <h3>Публикации</h3>
@@ -286,7 +294,7 @@
         <div>© <span id="year"></span> UnitedSeeds</div>
     </footer>
 
-    <div id="toast" class="hidden" style="position:fixed;right:16px;bottom:16px;background:#388E3C;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-width:80vw;"></div>
+    <div id="toast" class="hidden" style="position:fixed;right:16px;bottom:16px;background:var(--toast-bg, #388E3C);color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-width:80vw;"></div>
 
     <div id="global-spinner" class="hidden" aria-hidden="true" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.35);z-index:9998;">
         <div style="background:#ffffff;padding:16px 18px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;align-items:center;gap:12px;color:#4A6572;">
