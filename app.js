@@ -1796,20 +1796,34 @@ function getAuthHeaders() {
   async function sendRetweetRequest(postId, userId, method) {
     const params = new URLSearchParams({ userId });
     const url = `${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`;
-    const headers = {
-      'accept': '*/*',
-      'X-Requested-With': 'XMLHttpRequest',
-      ...getAuthHeaders()
-    };
-    let body;
-    if (method === 'POST') {
-      headers['Content-Type'] = 'application/json';
-      body = JSON.stringify({ userId });
+    if (!window.navigator.sendBeacon) {
+      return fetch(url, {
+        method,
+        headers: {
+          'accept': '*/*',
+          ...getAuthHeaders()
+        }
+      });
     }
-    return fetch(url, {
-      method,
-      headers,
-      body
+    return new Promise(resolve => {
+      const controller = new AbortController();
+      const beaconHeaders = {
+        type: 'application/x-www-form-urlencoded; charset=UTF-8'
+      };
+      const beaconBody = `${encodeURIComponent(params.toString())}`;
+      const sent = window.navigator.sendBeacon(url, beaconBody);
+      if (!sent) {
+        resolve(fetch(url, {
+          method,
+          headers: {
+            'accept': '*/*',
+            ...getAuthHeaders()
+          }
+        }));
+      } else {
+        resolve(new Response(null, { status: 200 }));
+      }
+      controller.abort();
     });
   }
 
