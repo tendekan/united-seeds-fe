@@ -1785,12 +1785,7 @@ function getAuthHeaders() {
     const params = new URLSearchParams({ userId });
     const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
       method: 'POST',
-      headers: {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
-      body: JSON.stringify({ userId })
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to retweet post');
   }
@@ -1801,11 +1796,7 @@ function getAuthHeaders() {
     const params = new URLSearchParams({ userId });
     const resp = await fetch(`${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`, {
       method: 'DELETE',
-      headers: {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to undo retweet');
   }
