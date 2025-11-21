@@ -1092,12 +1092,15 @@ function getAuthHeaders() {
     const safeItems = items.map(item => {
       const name = (item?.userName || '').trim() || `Потребител${item?.userId ? ' #' + item.userId : ''}`;
       const initial = name.trim()[0]?.toUpperCase() || '•';
-      return { name, initial };
+      const label = item?.userId
+        ? buildUserProfileLabel(name, item.userId, 'like-name')
+        : `<span class="like-name">${escapeHtml(name)}</span>`;
+      return { label, initial };
     });
     likesModalBody.innerHTML = safeItems.map(item => `
       <div class="like-user">
         <div class="like-initial">${escapeHtml(item.initial)}</div>
-        <div class="like-name">${escapeHtml(item.name)}</div>
+        ${item.label}
       </div>
     `).join('');
   }
