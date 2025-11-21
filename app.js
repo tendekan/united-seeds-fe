@@ -1796,17 +1796,20 @@ function getAuthHeaders() {
   async function sendRetweetRequest(postId, userId, method) {
     const params = new URLSearchParams({ userId });
     const url = `${BACKEND_URL}/posts/${postId}/retweets?${params.toString()}`;
-    try {
-      await fetch(url, { method: 'OPTIONS', headers: { 'accept': '*/*' } });
-    } catch (err) {
-      console.warn('Retweet preflight failed (safe to ignore in most cases):', err);
+    const headers = {
+      'accept': '*/*',
+      'X-Requested-With': 'XMLHttpRequest',
+      ...getAuthHeaders()
+    };
+    let body;
+    if (method === 'POST') {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify({ userId });
     }
     return fetch(url, {
       method,
-      headers: {
-        'accept': '*/*',
-        ...getAuthHeaders()
-      }
+      headers,
+      body
     });
   }
 
