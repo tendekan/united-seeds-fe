@@ -1235,6 +1235,8 @@ function getAuthHeaders() {
       const authorMarkup = buildUserProfileLabel(p.author?.name, p.author?.userId || p.author?.id, 'owner-name');
       const authorPhoto = p.author?.photoUrl || getAvatarPlaceholder(p.author?.name);
       const authorName = escapeHtml(p.author?.name || 'Потребител');
+      const shareCount = safeCount(p.shareCount ?? 0);
+      const stats = buildPostStats(p);
       el.innerHTML = `
         <div class="post-header">
           <img class="avatar" src="${authorPhoto}" alt="${authorName}">
@@ -1246,6 +1248,7 @@ function getAuthHeaders() {
         <div class="post-text">${escapeHtml(p.text)}</div>
         ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
         ${p.videoName ? `<div class="post-meta">Attached video: ${escapeHtml(p.videoName)}</div>` : ''}
+        ${stats}
         <div class="post-actions">
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
             <span class="like-heart" aria-hidden="true">♡</span>
@@ -1254,7 +1257,7 @@ function getAuthHeaders() {
           <button class="btn btn-secondary btn-sm btn-retweet-post" data-post-id="${p.id}" ${retweetButtonAttrs}>
             <span class="retweet-icon" aria-hidden="true">⟳</span>
             <span class="retweet-label">Сподели</span>
-            <span class="retweet-count-badge">0</span>
+            <span class="retweet-count-badge">${shareCount}</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
             ${buildLikesLabel(0)}
@@ -2257,6 +2260,8 @@ function getAuthHeaders() {
       const likeButtonAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
       const retweetButtonAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
       const authorMarkup = buildUserProfileLabel(p.facebookName || p.userId || 'Потребител', p.userId, 'owner-name');
+      const shareCount = safeCount(p.shareCount ?? 0);
+      const stats = buildPostStats(p);
       el.innerHTML = `
         <div class="post-header">
           <div>
@@ -2266,6 +2271,7 @@ function getAuthHeaders() {
         </div>
         <div class="post-text">${escapeHtml(String(p.postText || ''))}</div>
         <div class="post-media"></div>
+        ${stats}
         <div class="post-meta">${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</div>
         <div class="post-actions">
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
@@ -2275,7 +2281,7 @@ function getAuthHeaders() {
           <button class="btn btn-secondary btn-sm btn-retweet-post" data-post-id="${p.id}" ${retweetButtonAttrs}>
             <span class="retweet-icon" aria-hidden="true">⟳</span>
             <span class="retweet-label">Сподели</span>
-            <span class="retweet-count-badge">0</span>
+            <span class="retweet-count-badge">${shareCount}</span>
           </button>
           <button class="btn-link btn-view-post-likes" data-post-id="${p.id}" ${likeButtonAttrs}>
             ${buildLikesLabel(0)}
