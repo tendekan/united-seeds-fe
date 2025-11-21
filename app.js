@@ -598,61 +598,112 @@ function getAuthHeaders() {
   }
 
   function renderProfilePostsList(items) {
-    if (!profilePostsList) return;
-    if (!items.length) {
-      profilePostsList.innerHTML = '<div class="muted">Все още няма публикувано съдържание.</div>';
-      return;
-    }
-    const frag = document.createDocumentFragment();
-    items.forEach(post => {
-      const el = document.createElement('div');
-      el.className = 'post-card';
-      const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', post.userId, 'owner-name');
-      el.innerHTML = `
-        <div class="post-header">
-          <div>${authorMarkup}
-            <div class="post-meta">${escapeHtml(post.category || '')}${post.subcategory ? ' • ' + escapeHtml(post.subcategory) : ''}</div>
-          </div>
-        </div>
-        <div class="post-text">${escapeHtml(post.postText || '')}</div>
-        <div class="post-meta">${formatDateTimeSafe(post.createdAt)}</div>
-      `;
-      frag.appendChild(el);
-    });
-    profilePostsList.innerHTML = '';
-    profilePostsList.appendChild(frag);
+    renderProfilePostEntries(profilePostsList, items, 'Все още няма публикувано съдържание.');
   }
 
   function renderProfileRetweetsList(items) {
-    if (!profileRetweetsList) return;
-    if (!items.length) {
-      profileRetweetsList.innerHTML = '<div class="muted">Няма споделени публикации.</div>';
+    renderProfilePostEntries(profileRetweetsList, items, 'Няма споделени публикации.', true);
+  }
+
+  function renderProfilePostEntries(container, entries, emptyMessage, isRetweet = false) {
+    if (!container) return;
+    if (!entries || !entries.length) {
+      container.innerHTML = `<div class="muted">${emptyMessage}</div>`;
       return;
     }
     const frag = document.createDocumentFragment();
-    items.forEach(entry => {
-      const post = entry.post || {};
-      const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', post.userId, 'owner-name');
-      const retweetDate = formatDateTimeSafe(entry.retweetedAt);
-      const retweetedMeta = retweetDate ? `Споделено на ${retweetDate}` : 'Споделено';
-      const tags = post.category ? `<div class="tags"><span class="tag">${escapeHtml(post.category)}</span>${post.subcategory ? `<span class="tag">${escapeHtml(post.subcategory)}</span>` : ''}</div>` : '';
-      const el = document.createElement('div');
-      el.className = 'post-card';
-      el.innerHTML = `
-        <div class="post-header">
-          <div>${authorMarkup}
-            <div class="post-meta">${escapeHtml(post.category || '')}${post.subcategory ? ' • ' + escapeHtml(post.subcategory) : ''}</div>
-          </div>
-        </div>
-        <div class="post-meta">${retweetedMeta}</div>
-        <div class="post-text">${escapeHtml(post.postText || '')}</div>
-        ${tags}
-        <div class="post-meta">${formatDateTimeSafe(post.createdAt)}</div>
-      `;
-      frag.appendChild(el);
+    entries.forEach(entry => {
+      frag.appendChild(buildProfilePostCard(entry, isRetweet));
     });
-    profileRetweetsList.innerHTML = '';
-    profileRetweetsList.appendChild(frag);
+    container.innerHTML = '';
+    container.appendChild(frag);
+    initializePostLikeButtons(container);
+    initializePostRetweetButtons(container);
+  }
+
+  function buildProfilePostCard(entry, forceRetweetBadge = false) {
+    const envelope = entry || {};
+    const post = envelope.post || envelope;
+    const canLike = canUseBackendId(post.id);
+    const likeAttrs = canLike ? '' : 'disabled title="Харесванията са налични само за публикации от сървъра"';
+    const retweetAttrs = canLike ? '' : 'disabled title="Споделянето е налично само за публикации от сървъра"';
+    const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', post.userId, 'owner-name');
+    const stats = buildPostStats(envelope);
+    const retweetInfo = forceRetweetBadge || envelope.retweet
+      ? `<div class="retweet-badge">${envelope.retweetedAt ? `Споделено на ${formatDateTimeSafe(envelope.retweetedAt)}` : 'Споделено'}</div>`
+      : '';
+    const categoryLine = `${escapeHtml(post.category || '')}${post.subcategory ? ' • ' + escapeHtml(post.subcategory) : ''}`;
+    const el = document.createElement('div');
+    el.className = 'post-card';
+    el.setAttribute('data-post-id', post.id);
+    el.innerHTML = `
+      <div class="post-header">
+        <div>
+          ${authorMarkup}
+          <div class="post-meta">${categoryLine}</div>
+        </div>
+      </div>
+      ${retweetInfo}
+      <div class="post-text">${escapeHtml(post.postText || '')}</div>
+      <div class="post-media"></div>
+      ${stats}
+      <div class="post-meta">${formatDateTimeSafe(post.createdAt)}</div>
+      <div class="post-actions">
+        <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${post.id}" ${likeAttrs}>
+          <span class="like-heart" aria-hidden="true">♡</span>
+          <span class="like-label">Харесай</span>
+        </button>
+        <button class="btn btn-secondary btn-sm btn-retweet-post" data-post-id="${post.id}" ${retweetAttrs}>
+          <span class="retweet-icon" aria-hidden="true">⟳</span>
+          <span class="retweet-label">Сподели</span>
+          <span class="retweet-count-badge">${safeCount(envelope.shareCount ?? 0)}</span>
+        </button>
+        <button class="btn-link btn-view-post-likes" data-post-id="${post.id}" ${likeAttrs}>
+          ${buildLikesLabel(envelope.likeCount ?? (envelope.likes?.length ?? 0))}
+        </button>
+        <button class="btn btn-secondary btn-sm btn-toggle-comments">Коментари</button>
+      </div>
+      <div class="comments-section hidden">
+        <div class="comments-controls">
+          <label>
+            <span>Подреди:</span>
+            <select class="comment-sort">
+              <option value="desc">Най-нови първо</option>
+              <option value="asc">Най-стари първо</option>
+            </select>
+          </label>
+        </div>
+        <div class="comments-list"></div>
+        <form class="comment-form">
+          <input type="text" class="comment-input" placeholder="Напиши коментар...">
+          <button type="submit" class="btn btn-sm">Публикувай</button>
+        </form>
+      </div>
+    `;
+    const mediaContainer = el.querySelector('.post-media');
+    const videoFile = post.videoUrl || post.videoLink || '';
+    if (mediaContainer && videoFile) {
+      attachSignedVideoToCard(mediaContainer, videoFile).catch(err => console.error('Failed to attach profile video', err));
+    } else if (mediaContainer) {
+      mediaContainer.remove();
+    }
+    return el;
+  }
+
+  function buildPostStats(entry) {
+    const likeCount = safeCount(entry?.likeCount ?? (entry?.likes?.length ?? 0));
+    const commentCount = safeCount(entry?.commentCount ?? (entry?.comments?.length ?? 0));
+    const shareCount = safeCount(entry?.shareCount ?? 0);
+    return `
+      <div class="post-meta post-stats">
+        Харесвания: ${likeCount} • Коментари: ${commentCount} • Споделяния: ${shareCount}
+      </div>
+    `;
+  }
+
+  function safeCount(value) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
   }
 
   function setProfileLoadingState() {

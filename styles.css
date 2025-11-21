@@ -122,6 +122,9 @@ html, body {
 .btn-retweet-post { display: inline-flex; align-items: center; gap: 4px; }
 .btn-retweet-post.is-retweeted { border-color: var(--primary); color: var(--primary); background: rgba(56, 142, 60, 0.08); }
 .retweet-count-badge { font-weight: 600; margin-left: 4px; }
+.retweet-badge { font-size: 12px; color: var(--primary); display: inline-flex; align-items: center; gap: 4px; }
+.retweet-badge::before { content: '⟳'; font-size: 13px; }
+.post-stats { font-size: 12px; color: var(--muted); }
 
 /* Services view */
 .services-view { display: grid; }
