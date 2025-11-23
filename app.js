@@ -133,7 +133,7 @@ try {
   const profileEmail = document.getElementById('profile-email');
   const profilePhotoDisplay = document.getElementById('profile-photo-display');
   const profilePhotoUpload = document.getElementById('profile-photo-upload');
-  const btnProfilePhotoDelete = document.getElementById('btn-profile-photo-delete');
+
   const profilePhotoActions = document.getElementById('profile-photo-actions');
 
   const landing = document.getElementById('landing');
@@ -299,7 +299,7 @@ try {
     });
     if (profilePhotoDisplay) profilePhotoDisplay.addEventListener('click', onProfilePhotoClick);
     if (profilePhotoUpload) profilePhotoUpload.addEventListener('change', onProfilePhotoSelected);
-    if (btnProfilePhotoDelete) btnProfilePhotoDelete.addEventListener('click', onProfilePhotoDelete);
+
     setupCategories();
     setupServiceTileRouting();
     setupSettings();
@@ -2998,10 +2998,6 @@ try {
 
   function updateProfilePhotoControls(isOwnProfile) {
     if (profilePhotoActions) profilePhotoActions.classList.toggle('hidden', !isOwnProfile);
-    if (btnProfilePhotoDelete) {
-      const hasPhoto = profilePhotoDisplay?.dataset.hasPhoto === 'true';
-      btnProfilePhotoDelete.disabled = !isOwnProfile || !hasPhoto;
-    }
   }
 
   async function onProfilePhotoSelected(event) {
@@ -3032,29 +3028,6 @@ try {
     } finally {
       showGlobalSpinner(false);
       event.target.value = '';
-    }
-  }
-
-  async function onProfilePhotoDelete() {
-    const userId = getSafeUserId();
-    if (!userId) return;
-    if (normalizeUserId(activeProfileUserId) !== normalizeUserId(userId)) {
-      showToast('Можете да променяте само своята снимка.', 'error');
-      return;
-    }
-    if (!confirm('Сигурни ли сте, че искате да премахнете снимката?')) return;
-    showGlobalSpinner(true);
-    try {
-      await deleteProfilePhoto(userId);
-      invalidateProfilePhoto(userId);
-      await displayProfilePhoto(userId, true);
-      hydrateUserAvatars(document);
-      showToast('Снимката беше премахната.');
-    } catch (error) {
-      console.error('Failed to delete profile photo', error);
-      showToast('Неуспешно премахване на снимката.', 'error');
-    } finally {
-      showGlobalSpinner(false);
     }
   }
 

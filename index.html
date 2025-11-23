@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="bg">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UnitedSeeds — Платформа за цяложивотно обучение</title>
-    <meta name="description" content="UnitedSeeds: Споделяйте умения, научете се от други, възнаграждавайте създателите.">
+    <meta name="description"
+        content="UnitedSeeds: Споделяйте умения, научете се от други, възнаграждавайте създателите.">
     <link rel="stylesheet" href="./styles.css">
 
     <!--
@@ -39,6 +41,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Facebook SDK will be loaded dynamically in app.js -->
 </head>
+
 <body>
     <header class="site-header">
         <div class="brand">
@@ -53,7 +56,7 @@
                 <button id="btn-open-signup" class="btn" title="Регистрирай се">Регистрирай се</button>
             </div>
             <div id="auth-when-signed-in" class="profile hidden">
-                <img id="profile-picture" class="avatar" alt="Профил" src=""/>
+                <img id="profile-picture" class="avatar" alt="Профил" src="" />
                 <div class="profile-info">
                     <div id="profile-name" class="name"></div>
                     <div id="profile-email" class="email"></div>
@@ -74,7 +77,8 @@
                     <span class="icon">G</span> Продължи с Google
                 </button>
             </div>
-            <p class="muted small">С продължаването се съгласявате с нашите Условия и признавате нашата Политика за поверителност.</p>
+            <p class="muted small">С продължаването се съгласявате с нашите Условия и признавате нашата Политика за
+                поверителност.</p>
         </div>
     </div>
 
@@ -91,8 +95,10 @@
             <div style="position: relative; width: 100%; height: 0; padding-top: 281.1127%;
  padding-bottom: 0; box-shadow: 0 2px 8px 0 rgba(63,69,81,0.16); margin-top: 1.6em; margin-bottom: 0.9em; overflow: hidden;
  border-radius: 8px; will-change: transform;">
-                <iframe loading="lazy" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0;margin: 0;"
-                        src="https://www.canva.com/design/DAG3zLhxUqs/pqEfrh_IQ5PaEJn1x1ky5Q/view?embed" allowfullscreen="allowfullscreen" allow="fullscreen">
+                <iframe loading="lazy"
+                    style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0;margin: 0;"
+                    src="https://www.canva.com/design/DAG3zLhxUqs/pqEfrh_IQ5PaEJn1x1ky5Q/view?embed"
+                    allowfullscreen="allowfullscreen" allow="fullscreen">
                 </iframe>
             </div>
         </section>
@@ -101,11 +107,16 @@
             <div class="app-shell">
                 <aside class="sidebar">
                     <nav class="menu">
-                        <button id="nav-profile" class="menu-item" title="Моят профил"><span class="menu-icon">👤</span><span>Моят профил</span></button>
-                        <button id="nav-create" class="menu-item" title="Създай публикация"><span class="menu-icon">✍️</span><span>Създай публикация</span></button>
-                        <button id="nav-services" class="menu-item" title="Услуги"><span class="menu-icon">🧩</span><span>Услуги</span></button>
-                        <button id="nav-dating" class="menu-item" title="Запознанства"><span class="menu-icon">💞</span><span>Запознанства</span></button>
-                        <button id="nav-settings" class="menu-item" title="Настройки"><span class="menu-icon">⚙️</span><span>Настройки</span></button>
+                        <button id="nav-profile" class="menu-item" title="Моят профил"><span
+                                class="menu-icon">👤</span><span>Моят профил</span></button>
+                        <button id="nav-create" class="menu-item" title="Създай публикация"><span
+                                class="menu-icon">✍️</span><span>Създай публикация</span></button>
+                        <button id="nav-services" class="menu-item" title="Услуги"><span
+                                class="menu-icon">🧩</span><span>Услуги</span></button>
+                        <button id="nav-dating" class="menu-item" title="Запознанства"><span
+                                class="menu-icon">💞</span><span>Запознанства</span></button>
+                        <button id="nav-settings" class="menu-item" title="Настройки"><span
+                                class="menu-icon">⚙️</span><span>Настройки</span></button>
                     </nav>
                 </aside>
                 <section class="main-pane">
@@ -128,7 +139,6 @@
                                     <span>Качи снимка</span>
                                     <input type="file" id="profile-photo-upload" accept="image/*" hidden>
                                 </label>
-                                <button id="btn-profile-photo-delete" class="btn btn-secondary btn-sm" type="button">Премахни</button>
                             </div>
                         </div>
                         <div id="profile-summary" class="profile-summary">
@@ -137,7 +147,8 @@
                                 <div class="summary-content">
                                     <span id="profile-bio-display" class="summary-value">Няма биография.</span>
                                     <div class="summary-input">
-                                        <textarea id="profile-bio-input" rows="4" placeholder="Разкажете повече за себе си"></textarea>
+                                        <textarea id="profile-bio-input" rows="4"
+                                            placeholder="Разкажете повече за себе си"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -163,7 +174,8 @@
                                 </div>
                             </div>
                             <div class="profile-edit-actions hidden" id="profile-edit-actions">
-                                <button id="btn-cancel-profile" class="btn btn-secondary btn-sm" type="button">Откажи</button>
+                                <button id="btn-cancel-profile" class="btn btn-secondary btn-sm"
+                                    type="button">Откажи</button>
                                 <button id="btn-save-profile" class="btn btn-sm" type="button">Запази</button>
                             </div>
                         </div>
@@ -197,7 +209,8 @@
                             <span>Видео (по избор)</span>
                             <input id="post-video" class="compact" type="file" accept="video/*">
                         </label>
-                        <textarea id="post-text" class="narrow" rows="8" placeholder="Сподели нещо с общността..."></textarea>
+                        <textarea id="post-text" class="narrow" rows="8"
+                            placeholder="Сподели нещо с общността..."></textarea>
                         <div class="actions">
                             <button id="btn-post" class="btn">Публикувай</button>
                         </div>
@@ -268,7 +281,9 @@
                     </div>
                     <div id="dating-view" class="dating-view hidden">
                         <div class="dating-hero">
-                            <img loading="lazy" src="https://images.unsplash.com/photo-1584467735871-3316d0b4f63a?q=80&w=1200&auto=format&fit=crop" alt="Възрастна двойка се усмихва заедно" onerror="this.style.display='none'"/>
+                            <img loading="lazy"
+                                src="https://images.unsplash.com/photo-1584467735871-3316d0b4f63a?q=80&w=1200&auto=format&fit=crop"
+                                alt="Възрастна двойка се усмихва заедно" onerror="this.style.display='none'" />
                             <div class="dating-slogan">Намери своя идеален партньор сега</div>
                         </div>
                     </div>
@@ -313,11 +328,16 @@
         <div>© <span id="year"></span> UnitedSeeds</div>
     </footer>
 
-    <div id="toast" class="hidden" style="position:fixed;right:16px;bottom:16px;background:var(--toast-bg, #388E3C);color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-width:80vw;"></div>
+    <div id="toast" class="hidden"
+        style="position:fixed;right:16px;bottom:16px;background:var(--toast-bg, #388E3C);color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:9999;max-width:80vw;">
+    </div>
 
-    <div id="global-spinner" class="hidden" aria-hidden="true" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.35);z-index:9998;">
-        <div style="background:#ffffff;padding:16px 18px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;align-items:center;gap:12px;color:#4A6572;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:spin 1s linear infinite">
+    <div id="global-spinner" class="hidden" aria-hidden="true"
+        style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.35);z-index:9998;">
+        <div
+            style="background:#ffffff;padding:16px 18px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;align-items:center;gap:12px;color:#4A6572;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="animation:spin 1s linear infinite">
                 <circle cx="12" cy="12" r="10" stroke="#cfd8dc" stroke-width="4"></circle>
                 <path d="M22 12a10 10 0 0 1-10 10" stroke="#388E3C" stroke-width="4" stroke-linecap="round"></path>
             </svg>
@@ -338,7 +358,15 @@
     </div>
 
     <style>
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 
     <script>
@@ -348,4 +376,5 @@
     </script>
     <script src="./app.js"></script>
 </body>
+
 </html>
