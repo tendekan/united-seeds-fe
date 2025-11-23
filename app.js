@@ -2817,18 +2817,19 @@ function getAuthHeaders() {
       createdAt: base.createdAt || new Date().toISOString()
     };
   }
-  function extractPhotoUrlCandidate(payload, depth = 0) {
-    if (!payload || depth > 6) return '';
-    if (typeof payload === 'string') return payload;
+  function extractProfilePictureUrl(payload, depth = 0) {
+    if (!payload || depth > 4) return '';
+    if (typeof payload === 'string') return payload.trim();
     if (Array.isArray(payload)) {
       for (const entry of payload) {
-        const nested = extractPhotoUrlCandidate(entry, depth + 1);
+        const nested = extractProfilePictureUrl(entry, depth + 1);
         if (nested) return nested;
       }
       return '';
     }
     if (typeof payload === 'object') {
       const candidateKeys = [
+        'pictureUrl',
         'url',
         'imageUrl',
         'photoUrl',
@@ -2836,85 +2837,19 @@ function getAuthHeaders() {
         'link',
         'signedUrl',
         'picture',
-        'src',
-        'photo',
-        'photo_url',
-        'mediaLink',
-        'downloadUrl'
+        'src'
       ];
       for (const key of candidateKeys) {
         if (typeof payload[key] === 'string' && payload[key].trim()) {
-          return payload[key];
+          return payload[key].trim();
         }
       }
       for (const value of Object.values(payload)) {
-        const nested = extractPhotoUrlCandidate(value, depth + 1);
+        const nested = extractProfilePictureUrl(value, depth + 1);
         if (nested) return nested;
       }
     }
     return '';
-  }
-
-  function isLikelyPhotoUrl(value) {
-    if (!value || typeof value !== 'string') return false;
-    const trimmed = value.trim();
-    return /^https?:\/\//i.test(trimmed) || trimmed.startsWith('data:') || trimmed.startsWith('blob:') || trimmed.startsWith('/');
-  }
-
-  function normalizePhotoUrl(url) {
-    if (!url || typeof url !== 'string') return '';
-    const trimmed = url.trim();
-    if (!trimmed) return '';
-    if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return trimmed;
-    if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    if (trimmed.startsWith('//')) {
-      const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) || 'https:';
-      return `${protocol}${trimmed}`;
-    }
-    try {
-      const backendOrigin = new URL(BACKEND_URL).origin;
-      return new URL(trimmed, backendOrigin).toString();
-    } catch (error) {
-      try {
-        if (typeof window !== 'undefined' && window.location) {
-          return new URL(trimmed, window.location.origin).toString();
-        }
-      } catch (inner) {
-        // ignore
-      }
-      return trimmed;
-    }
-  }
-
-  function shouldAttachAuthForPhoto(url) {
-    try {
-      const photoOrigin = new URL(url).origin;
-      const backendOrigin = new URL(BACKEND_URL).origin;
-      return photoOrigin === backendOrigin;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  async function resolvePhotoFromLink(url) {
-    if (!url) return null;
-    const normalized = normalizePhotoUrl(url);
-    if (!normalized || !isLikelyPhotoUrl(normalized)) return null;
-    if (!shouldAttachAuthForPhoto(normalized)) {
-      return normalized;
-    }
-    try {
-      const resp = await fetch(normalized, { headers: { ...getAuthHeaders() } });
-      if (resp.ok) {
-        const blob = await resp.blob();
-        if (blob && blob.size) {
-          return URL.createObjectURL(blob);
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to download authenticated profile photo, falling back to URL.', error);
-    }
-    return normalized;
   }
 
   async function ensureProfilePhoto(userId) {
@@ -2924,39 +2859,13 @@ function getAuthHeaders() {
       profilePhotoPending[userId] = (async () => {
         try {
           const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile/picture`, {
-            headers: { accept: '*/*', ...getAuthHeaders() }
+            headers: { accept: 'application/json', ...getAuthHeaders() }
           });
           if (!resp.ok) throw new Error('Failed to fetch profile photo');
-          const contentType = (resp.headers.get('content-type') || '').toLowerCase();
-          if (contentType.includes('application/json')) {
-            const data = await resp.json().catch(() => null);
-            const url = extractPhotoUrlCandidate(data)?.trim();
-            if (url) {
-              const resolved = (await resolvePhotoFromLink(url)) || null;
-              profilePhotoCache[userId] = resolved;
-              return resolved;
-            }
-            profilePhotoCache[userId] = null;
-            return null;
-          }
-          if (contentType.startsWith('text/')) {
-            const text = (await resp.text()).trim();
-            if (text) {
-              const resolved = (await resolvePhotoFromLink(text)) || (isLikelyPhotoUrl(text) ? normalizePhotoUrl(text) : null);
-              profilePhotoCache[userId] = resolved || null;
-              return resolved || null;
-            }
-            profilePhotoCache[userId] = null;
-            return null;
-          }
-          const blob = await resp.blob();
-          if (!blob || !blob.size) {
-            profilePhotoCache[userId] = null;
-            return null;
-          }
-          const url = URL.createObjectURL(blob);
-          profilePhotoCache[userId] = url;
-          return url;
+          const data = await resp.json().catch(() => null);
+          const url = extractProfilePictureUrl(data);
+          profilePhotoCache[userId] = url || null;
+          return url || null;
         } catch (error) {
           profilePhotoCache[userId] = null;
           return null;
