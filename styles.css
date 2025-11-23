@@ -322,9 +322,28 @@ textarea { resize: vertical; }
 .modal { position: fixed; inset: 0; display: grid; place-items: center; z-index: 50; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(3px); }
 .modal-dialog { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; width: min(92vw, 320px); box-shadow: 0 30px 80px rgba(0,0,0,.18); display: grid; gap: 12px; backdrop-filter: var(--glass); animation: scaleIn 220ms ease-out; }
-.photo-modal-dialog { width: auto; max-width: 90vw; padding: 0; border: none; background: transparent; box-shadow: none; }
+.photo-modal-dialog {
+  width: auto;
+  max-width: 95vw;
+  max-height: 90vh;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .photo-modal-dialog .modal-close { background: rgba(15,23,42,0.75); color: #f8fafc; border: none; }
-.photo-modal-img { max-width: 90vw; max-height: 80vh; border-radius: 18px; box-shadow: 0 30px 80px rgba(0,0,0,.45); display: block; }
+.photo-modal-img {
+  max-width: min(95vw, 1400px);
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.45);
+  display: block;
+}
 .likes-modal-dialog { width: min(92vw, 420px); max-height: 70vh; overflow: hidden; }
 .likes-modal-body { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--card); max-height: calc(70vh - 80px); overflow-y: auto; display: grid; gap: 10px; }
 .likes-modal-body .like-user { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(148,163,184,0.25); }
