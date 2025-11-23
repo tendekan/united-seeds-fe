@@ -1040,8 +1040,22 @@ try {
 
   function translateSubcategoryToBG(categoryKey, subcategoryValue) {
     if (!subcategoryValue || !categoryKey) return '';
+
+    // Normalize category key - it might be "Finance" instead of "finance"
+    let normalizedCategoryKey = categoryKey;
+
+    // If categoryKey is not in SUBCATEGORY_MAP_BG, try to find it by English label
+    if (!SUBCATEGORY_MAP_BG[categoryKey]) {
+      const entry = CATEGORY_LABELS.find(([key, label]) =>
+        label.toLowerCase() === categoryKey.toLowerCase()
+      );
+      if (entry) {
+        normalizedCategoryKey = entry[0];
+      }
+    }
+
     // Try to find the translation
-    const translations = SUBCATEGORY_MAP_BG[categoryKey];
+    const translations = SUBCATEGORY_MAP_BG[normalizedCategoryKey];
     if (translations && translations[subcategoryValue]) {
       return translations[subcategoryValue];
     }
