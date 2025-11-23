@@ -1167,6 +1167,10 @@ try {
       // Try to get from backend/cache
       const currentUserId = getSafeUserId();
       if (currentUserId) {
+        // Enable auto-updates via hydrateUserAvatars
+        profilePic.dataset.userAvatar = currentUserId;
+        profilePic.dataset.avatarFallback = fallbackUrl;
+
         ensureProfilePhoto(currentUserId).then(url => {
           if (url) {
             profilePic.src = url;
