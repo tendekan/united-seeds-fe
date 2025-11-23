@@ -19,7 +19,7 @@ try {
   // fallback to default
 }
 
-(function() {
+(function () {
   'use strict';
 
   // ---------- Utilities ----------
@@ -46,13 +46,13 @@ try {
     }
   }
 
-function getAuthHeaders() {
-  const headers = {};
-  if (authState && authState.accessToken) {
-    headers.Authorization = `Bearer ${authState.accessToken}`;
+  function getAuthHeaders() {
+    const headers = {};
+    if (authState && authState.accessToken) {
+      headers.Authorization = `Bearer ${authState.accessToken}`;
+    }
+    return headers;
   }
-  return headers;
-}
 
   function generateId(prefix) {
     return `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`;
@@ -214,23 +214,23 @@ function getAuthHeaders() {
 
   // ---------- Initialization ----------
   function init() {
-  // Clear all demo/cached data from localStorage on first load
-  localStorage.removeItem('unitedseeds.auth');
-  localStorage.removeItem('unitedseeds.skills');
-  localStorage.removeItem('unitedseeds.posts');
-  localStorage.removeItem('unitedseeds.settings');
-  yearEl.textContent = new Date().getFullYear();
-  renderAuthUI();
-  if (skillsList && emptyState) renderSkills();
-  attachEvents();
-  // Set Google Client ID for OAuth2
-  window.UNITEDSEEDS_GOOGLE_CLIENT_ID =
-    '118701076488-ftubu48jfl4tvk7dg6op1cs25kl7fl7i.apps.googleusercontent.com';
-  initGoogle();
-  initFacebook();
-  attachPostEventDelegation(postsList);
-  attachPostEventDelegation(profilePostsList);
-  attachPostEventDelegation(profileRetweetsList);
+    // Clear all demo/cached data from localStorage on first load
+    localStorage.removeItem('unitedseeds.auth');
+    localStorage.removeItem('unitedseeds.skills');
+    localStorage.removeItem('unitedseeds.posts');
+    localStorage.removeItem('unitedseeds.settings');
+    yearEl.textContent = new Date().getFullYear();
+    renderAuthUI();
+    if (skillsList && emptyState) renderSkills();
+    attachEvents();
+    // Set Google Client ID for OAuth2
+    window.UNITEDSEEDS_GOOGLE_CLIENT_ID =
+      '118701076488-ftubu48jfl4tvk7dg6op1cs25kl7fl7i.apps.googleusercontent.com';
+    initGoogle();
+    initFacebook();
+    attachPostEventDelegation(postsList);
+    attachPostEventDelegation(profilePostsList);
+    attachPostEventDelegation(profileRetweetsList);
   }
 
 
@@ -238,7 +238,7 @@ function getAuthHeaders() {
     if (btnOpenSignin) btnOpenSignin.addEventListener('click', () => openAuthModal('Влез'));
     if (btnOpenSignup) btnOpenSignup.addEventListener('click', () => openAuthModal('Регистрирай се'));
     if (navProfile) navProfile.addEventListener('click', onNavigateToOwnProfile);
-  if (btnModalGoogle) btnModalGoogle.addEventListener('click', onGoogleSignInClick);
+    if (btnModalGoogle) btnModalGoogle.addEventListener('click', onGoogleSignInClick);
     if (btnModalFacebook) btnModalFacebook.addEventListener('click', onFacebookSignInClick);
     if (authModalClose) authModalClose.addEventListener('click', closeAuthModal);
     if (authModal) authModal.addEventListener('click', (e) => {
@@ -458,12 +458,12 @@ function getAuthHeaders() {
       const data = await fetchComments(postId, state.currentPage, 5, newOrder);
       state.totalPages = data.totalPages;
       state.totalComments = data.total;
-          renderComments(data.comments, commentsList, postId, state);
-          updatePostStatsDisplay(postId, { comments: state.totalComments });
-        } catch (error) {
-          console.error('Failed to change sort order:', error);
-          commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
-        }
+      renderComments(data.comments, commentsList, postId, state);
+      updatePostStatsDisplay(postId, { comments: state.totalComments });
+    } catch (error) {
+      console.error('Failed to change sort order:', error);
+      commentsList.innerHTML = '<div class="muted">Неуспешно зареждане на коментарите.</div>';
+    }
   }
 
   function handlePostRootSubmit(event) {
@@ -1157,15 +1157,21 @@ function getAuthHeaders() {
       if (appShell) appShell.classList.remove('hidden');
       if (createSkill) createSkill.classList.add('hidden');
       // Set profile picture with fallback
-      if (authState.photoUrl) {
-        console.log('[DEBUG] Using photoUrl:', authState.photoUrl);
-        profilePic.src = authState.photoUrl;
-        profilePic.alt = `Снимка на профила на ${authState.name || 'Потребител'}`;
-      } else {
-        const fallbackUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authState.name || 'Потребител') + '&background=0D8ABC&color=fff&size=128';
-        console.log('[DEBUG] Using fallback avatar:', fallbackUrl);
-        profilePic.src = fallbackUrl;
-        profilePic.alt = 'Аватар по подразбиране';
+      // Set profile picture with fallback
+      const fallbackUrl = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(authState.name || 'Потребител') + '&background=0D8ABC&color=fff&size=128';
+      profilePic.alt = `Снимка на профила на ${authState.name || 'Потребител'}`;
+
+      // Set initial/fallback
+      profilePic.src = fallbackUrl;
+
+      // Try to get from backend/cache
+      const currentUserId = getSafeUserId();
+      if (currentUserId) {
+        ensureProfilePhoto(currentUserId).then(url => {
+          if (url) {
+            profilePic.src = url;
+          }
+        });
       }
       profileName.textContent = authState.name || 'Потребител';
       profileEmail.textContent = authState.email || '';
@@ -1189,7 +1195,7 @@ function getAuthHeaders() {
   // ---------- Posts ----------
   const POSTS_KEY = 'unitedseeds.posts';
   let posts = loadFromStorage(POSTS_KEY, []);
-  
+
   // ---------- Comments Pagination & Sort State ----------
   const commentPaginationState = {}; // { postId: { currentPage: 1, totalPages: 1, totalComments: 0 } }
   const commentSortOrder = {}; // { postId: 'desc' | 'asc' }
@@ -1221,7 +1227,7 @@ function getAuthHeaders() {
 
     // Additionally send to external API as per requirement
     try {
-  const apiBase = BACKEND_URL + '/posts';
+      const apiBase = BACKEND_URL + '/posts';
       // Map internal values to API contract
       const categoryKeyToLabel = new Map(CATEGORY_LABELS);
       const categoryLabel = categoryKeyToLabel.get(newLocalPost.category) || newLocalPost.category || '';
@@ -1310,7 +1316,7 @@ function getAuthHeaders() {
   }
 
   async function requestSignedUploadUrl(fileName, contentTypeHint) {
-  const url = BACKEND_URL + '/api/v1/videos/upload-url';
+    const url = BACKEND_URL + '/api/v1/videos/upload-url';
     const body = {
       fileName: fileName,
       contentType: contentTypeHint
@@ -1485,18 +1491,18 @@ function getAuthHeaders() {
     const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
     if (!resp.ok) throw new Error('Failed to fetch comments');
     const data = await resp.json();
-    
+
     // Handle array response (legacy format)
     if (Array.isArray(data)) {
       const totalPages = Math.ceil(data.length / size);
       return { comments: data, total: data.length, totalPages: totalPages };
     }
-    
+
     // Handle backend response format: { comments: [...], total: number, totalPages: number }
     const comments = data.comments || [];
     const total = data.total || 0;
     const totalPages = data.totalPages || (total > 0 ? Math.ceil(total / size) : 1);
-    
+
     return {
       comments: comments,
       total: total,
@@ -1530,7 +1536,7 @@ function getAuthHeaders() {
       );
       const canLikeComment = canUseBackendId(comment.id);
       const commentLikeAttrs = canLikeComment ? '' : 'disabled title="Коментарът не е синхронизиран."';
-      
+
       el.innerHTML = `
         <div class="comment-content">
           <div class="comment-header">
@@ -1562,7 +1568,7 @@ function getAuthHeaders() {
     commentsListEl.appendChild(frag);
     initializeCommentLikeButtons(commentsListEl);
     hydrateUserAvatars(commentsListEl);
-    
+
     // Render pagination if needed
     if (paginationState && paginationState.totalPages > 1) {
       renderCommentPagination(commentsListEl.parentElement, postId, paginationState);
@@ -1574,12 +1580,12 @@ function getAuthHeaders() {
       }
     }
   }
-  
+
   function renderCommentPagination(commentsSection, postId, paginationState) {
     // Remove existing pagination
     const existing = commentsSection.querySelector('.comments-pagination');
     if (existing) existing.remove();
-    
+
     const paginationEl = document.createElement('div');
     paginationEl.className = 'comments-pagination';
     paginationEl.innerHTML = `
@@ -1587,15 +1593,15 @@ function getAuthHeaders() {
       <span class="muted" style="margin: 0 8px;">Страница ${paginationState.currentPage} от ${paginationState.totalPages}</span>
       <button class="btn btn-secondary btn-sm btn-comments-next" ${paginationState.currentPage >= paginationState.totalPages ? 'disabled' : ''}>Следваща</button>
     `;
-    
+
     // Insert before comment form
     const commentForm = commentsSection.querySelector('.comment-form');
     commentsSection.insertBefore(paginationEl, commentForm);
-    
+
     // Add event listeners
     const prevBtn = paginationEl.querySelector('.btn-comments-prev');
     const nextBtn = paginationEl.querySelector('.btn-comments-next');
-    
+
     prevBtn.addEventListener('click', async () => {
       if (paginationState.currentPage > 1) {
         paginationState.currentPage--;
@@ -1614,7 +1620,7 @@ function getAuthHeaders() {
         }
       }
     });
-    
+
     nextBtn.addEventListener('click', async () => {
       if (paginationState.currentPage < paginationState.totalPages) {
         paginationState.currentPage++;
@@ -2177,7 +2183,7 @@ function getAuthHeaders() {
       const respData = await resp.json();
 
       // Ensure the response includes userId for ownership checks
-      const newCommentForRender = { 
+      const newCommentForRender = {
         ...respData,
         userId: respData.userId || userId,
         authorName: authState.name,
@@ -2185,13 +2191,13 @@ function getAuthHeaders() {
       };
 
       const commentsList = postCard.querySelector('.comments-list');
-      
+
       // Reset to first page and reload comments
       if (!commentPaginationState[postId]) {
         commentPaginationState[postId] = { currentPage: 1, totalPages: 1, totalComments: 0 };
       }
       commentPaginationState[postId].currentPage = 1;
-      
+
       // Reload comments to show the new one
       commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
       try {
@@ -2205,7 +2211,7 @@ function getAuthHeaders() {
       } catch (error) {
         console.error('Failed to reload comments:', error);
       }
-      
+
       input.value = '';
       showToast('Вашият коментар беше публикуван.');
 
@@ -2218,10 +2224,10 @@ function getAuthHeaders() {
   async function handleEditComment(commentId) {
     const commentCard = document.querySelector(`[data-comment-id="${commentId}"]`);
     if (!commentCard) return;
-    
+
     const commentTextEl = commentCard.querySelector('[data-comment-text]');
     const currentText = commentTextEl.textContent;
-    
+
     // Create edit input
     const editInput = document.createElement('input');
     editInput.type = 'text';
@@ -2229,38 +2235,38 @@ function getAuthHeaders() {
     editInput.value = currentText;
     editInput.style.width = '100%';
     editInput.style.marginTop = '8px';
-    
+
     const saveBtn = document.createElement('button');
     saveBtn.type = 'button';
     saveBtn.className = 'btn btn-sm';
     saveBtn.textContent = 'Запази';
     saveBtn.style.marginTop = '8px';
     saveBtn.style.marginRight = '8px';
-    
+
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';
     cancelBtn.className = 'btn btn-secondary btn-sm';
     cancelBtn.textContent = 'Отказ';
     cancelBtn.style.marginTop = '8px';
-    
+
     const originalText = commentTextEl.innerHTML;
     commentTextEl.innerHTML = '';
     commentTextEl.appendChild(editInput);
     commentTextEl.appendChild(saveBtn);
     commentTextEl.appendChild(cancelBtn);
     editInput.focus();
-    
+
     const cleanup = () => {
       commentTextEl.innerHTML = originalText;
     };
-    
+
     saveBtn.addEventListener('click', async () => {
       const newText = editInput.value.trim();
       if (!newText) {
-      showToast('Коментарът не може да бъде празен.', 'error');
+        showToast('Коментарът не може да бъде празен.', 'error');
         return;
       }
-      
+
       try {
         await updateComment(commentId, newText);
         commentTextEl.innerHTML = escapeHtml(newText);
@@ -2271,7 +2277,7 @@ function getAuthHeaders() {
         cleanup();
       }
     });
-    
+
     cancelBtn.addEventListener('click', cleanup);
     editInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -2286,7 +2292,7 @@ function getAuthHeaders() {
     if (!confirm('Сигурни ли сте, че искате да изтриете този коментар?')) {
       return;
     }
-    
+
     try {
       await deleteComment(commentId);
       const commentCard = document.querySelector(`[data-comment-id="${commentId}"]`);
@@ -2295,7 +2301,7 @@ function getAuthHeaders() {
         const postId = postCard.dataset.postId;
         const commentsList = postCard.querySelector('.comments-list');
         const commentsSection = postCard.querySelector('.comments-section');
-        
+
         // Reload comments
         commentsList.innerHTML = '<div class="muted">Зареждане на коментари...</div>';
         const state = commentPaginationState[postId] || { currentPage: 1, totalPages: 1, totalComments: 0 };
@@ -2304,7 +2310,7 @@ function getAuthHeaders() {
         state.totalPages = data.totalPages;
         state.totalComments = data.total;
         renderComments(data.comments, commentsList, postId, state);
-        
+
         showToast('Коментарът беше изтрит.');
       }
     } catch (error) {
@@ -2411,13 +2417,13 @@ function getAuthHeaders() {
     } else if (section === 'profile') {
       if (profileView) profileView.classList.remove('hidden');
     } else if (section === 'services') {
-  if (servicesView) servicesView.classList.remove('hidden');
-  // Reset remote selection and hide posts pagination on services
-  currentRemoteCategory = '';
-  currentRemotePage = 1;
-  totalRemotePages = 1;
-  totalRemotePosts = 0;
-  if (postsPagination) postsPagination.classList.add('hidden');
+      if (servicesView) servicesView.classList.remove('hidden');
+      // Reset remote selection and hide posts pagination on services
+      currentRemoteCategory = '';
+      currentRemotePage = 1;
+      totalRemotePages = 1;
+      totalRemotePosts = 0;
+      if (postsPagination) postsPagination.classList.add('hidden');
     } else if (section === 'dating') {
       if (datingView) datingView.classList.remove('hidden');
     } else if (section === 'settings') {
@@ -2453,7 +2459,7 @@ function getAuthHeaders() {
 
   async function fetchServicePosts(categoryKey, page) {
     const apiCat = getApiCategoryParam(categoryKey);
-  const url = `${BACKEND_URL}/posts/category/${encodeURIComponent(apiCat)}?page=${page}&size=${pageSize}`;
+    const url = `${BACKEND_URL}/posts/category/${encodeURIComponent(apiCat)}?page=${page}&size=${pageSize}`;
     const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
     if (!resp.ok) throw new Error('Failed to fetch service posts');
     return resp.json();
@@ -2569,7 +2575,7 @@ function getAuthHeaders() {
   }
 
   async function requestSignedDownloadUrl(fileName) {
-  const url = BACKEND_URL + '/api/v1/videos/download-url';
+    const url = BACKEND_URL + '/api/v1/videos/download-url';
     const resp = await fetch(url, {
       method: 'POST',
       headers: { 'accept': '*/*', 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -3320,7 +3326,7 @@ function getAuthHeaders() {
     }).requestAccessToken();
   }
 
-// google oauth link removed
+  // google oauth link removed
 
   async function fetchGoogleUser(accessToken) {
     const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
@@ -3336,7 +3342,7 @@ function getAuthHeaders() {
     const appId = window.UNITEDSEEDS_FACEBOOK_APP_ID;
     if (!appId || appId.startsWith('YOUR_')) return; // not configured
     if (fbInited) return;
-    window.fbAsyncInit = function() {
+    window.fbAsyncInit = function () {
       /* global FB */
       FB.init({
         appId: appId,
@@ -3346,7 +3352,7 @@ function getAuthHeaders() {
       });
       fbInited = true;
     };
-    (function(d, s, id) {
+    (function (d, s, id) {
       const fjs = d.getElementsByTagName(s)[0];
       if (d.getElementById(id)) { fbInited = true; return; }
       const js = d.createElement(s); js.id = id; js.src = 'https://connect.facebook.net/en_US/sdk.js';
@@ -3361,9 +3367,9 @@ function getAuthHeaders() {
       return;
     }
     /* global FB */
-    FB.login(function(response) {
+    FB.login(function (response) {
       if (response && response.authResponse) {
-        (async function() {
+        (async function () {
           try {
             const user = await fetchFacebookUser();
             const accessToken = response.authResponse.accessToken;
@@ -3377,20 +3383,20 @@ function getAuthHeaders() {
               photoUrl: pictureUrl,
               accessToken: accessToken
             });
-  // Fetch Facebook user picture using Graph API and access token
-  async function fetchFacebookPicture(userId, accessToken) {
-    try {
-      const resp = await fetch(`https://graph.facebook.com/${userId}/picture?type=large&redirect=false&access_token=${accessToken}`);
-      const data = await resp.json();
-      if (data && data.data && data.data.url) {
-        return data.data.url;
-      }
-      return '';
-    } catch (e) {
-      console.error('Failed to fetch Facebook picture', e);
-      return '';
-    }
-  }
+            // Fetch Facebook user picture using Graph API and access token
+            async function fetchFacebookPicture(userId, accessToken) {
+              try {
+                const resp = await fetch(`https://graph.facebook.com/${userId}/picture?type=large&redirect=false&access_token=${accessToken}`);
+                const data = await resp.json();
+                if (data && data.data && data.data.url) {
+                  return data.data.url;
+                }
+                return '';
+              } catch (e) {
+                console.error('Failed to fetch Facebook picture', e);
+                return '';
+              }
+            }
           } catch (e) {
             console.error('FB user fetch failed', e);
             alert('Входът с Facebook не беше успешен.');
@@ -3406,7 +3412,7 @@ function getAuthHeaders() {
   async function fetchFacebookUser() {
     return new Promise((resolve, reject) => {
       /* global FB */
-      FB.api('/me', { fields: 'id,name,email' }, function(response) {
+      FB.api('/me', { fields: 'id,name,email' }, function (response) {
         if (!response || response.error) reject(response?.error || new Error('FB API error'));
         else resolve(response);
       });
