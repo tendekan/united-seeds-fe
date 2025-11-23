@@ -103,6 +103,8 @@ function getAuthHeaders() {
   const commentLikeState = {};
   const postOwnerCache = {};
   const postDataCache = {};
+  const profilePhotoCache = {};
+  const profilePhotoPending = {};
   let activeProfileUserId = null;
   let activeProfileData = null;
   let activeProfileDisplayName = '';
@@ -114,6 +116,8 @@ function getAuthHeaders() {
     Object.keys(postCommentCountState).forEach(key => delete postCommentCountState[key]);
     Object.keys(postRetweetState).forEach(key => delete postRetweetState[key]);
     Object.keys(commentLikeState).forEach(key => delete commentLikeState[key]);
+    Object.keys(postOwnerCache).forEach(key => delete postOwnerCache[key]);
+    clearProfilePhotoCache();
   }
 
   // ---------- DOM Elements ----------
@@ -127,6 +131,10 @@ function getAuthHeaders() {
   const profilePic = document.getElementById('profile-picture');
   const profileName = document.getElementById('profile-name');
   const profileEmail = document.getElementById('profile-email');
+  const profilePhotoDisplay = document.getElementById('profile-photo-display');
+  const profilePhotoUpload = document.getElementById('profile-photo-upload');
+  const btnProfilePhotoDelete = document.getElementById('btn-profile-photo-delete');
+  const profilePhotoActions = document.getElementById('profile-photo-actions');
 
   const landing = document.getElementById('landing');
   const appShell = document.getElementById('app-shell');
@@ -281,6 +289,8 @@ function getAuthHeaders() {
         openProfile(activeProfileUserId, { displayName: activeProfileDisplayName, forceReload: true });
       }
     });
+    if (profilePhotoUpload) profilePhotoUpload.addEventListener('change', onProfilePhotoSelected);
+    if (btnProfilePhotoDelete) btnProfilePhotoDelete.addEventListener('click', onProfilePhotoDelete);
     setupCategories();
     setupServiceTileRouting();
     setupSettings();
@@ -636,6 +646,7 @@ function getAuthHeaders() {
       exitProfileEditMode();
     }
     updateProfileEditControls();
+    displayProfilePhoto(userId, isOwnProfile);
     if (isProfileEditing) {
       syncProfileInputs(profile);
     }
@@ -675,6 +686,7 @@ function getAuthHeaders() {
     initializePostLikeButtons(container);
     initializePostRetweetButtons(container);
     idsNeedingHydration.forEach(id => hydratePostCommentCount(id));
+    hydrateUserAvatars(container);
   }
 
   function buildProfilePostCard(entry, forceRetweetBadge = false) {
@@ -703,17 +715,15 @@ function getAuthHeaders() {
     const ownerActions = canLike && isOwnPost ? buildPostOwnerActions(post.id) : '';
     el.innerHTML = `
       <div class="post-header">
-        <div>
-          ${authorMarkup}
-          <div class="post-meta">${categoryLine}</div>
-        </div>
+        ${authorMarkup}
+        <div class="post-meta">${formatDateTimeSafe(post.createdAt)}</div>
       </div>
       ${retweetInfo}
       <div class="post-text">${escapeHtml(post.postText || '')}</div>
       <div class="post-media"></div>
       ${stats}
+      <div class="post-meta">${categoryLine}</div>
       ${ownerActions}
-      <div class="post-meta">${formatDateTimeSafe(post.createdAt)}</div>
       <div class="post-actions">
         <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${post.id}" ${likeAttrs}>
           <span class="like-heart" aria-hidden="true">♡</span>
@@ -1091,18 +1101,11 @@ function getAuthHeaders() {
     }
     const safeItems = items.map(item => {
       const name = (item?.userName || '').trim() || `Потребител${item?.userId ? ' #' + item.userId : ''}`;
-      const initial = name.trim()[0]?.toUpperCase() || '•';
-      const label = item?.userId
-        ? buildUserProfileLabel(name, item.userId, 'like-name')
-        : `<span class="like-name">${escapeHtml(name)}</span>`;
-      return { label, initial };
+      const label = buildUserProfileLabel(name, item?.userId, 'like-name');
+      return { label };
     });
-    likesModalBody.innerHTML = safeItems.map(item => `
-      <div class="like-user">
-        <div class="like-initial">${escapeHtml(item.initial)}</div>
-        ${item.label}
-      </div>
-    `).join('');
+    likesModalBody.innerHTML = safeItems.map(item => `<div class="like-user">${item.label}</div>`).join('');
+    hydrateUserAvatars(likesModalBody);
   }
 
   // ---------- Auth UI ----------
@@ -1351,18 +1354,13 @@ function getAuthHeaders() {
       });
       if (ownerId) el.dataset.ownerId = ownerId;
       const authorMarkup = buildUserProfileLabel(p.author?.name, ownerId, 'owner-name');
-      const authorPhoto = p.author?.photoUrl || getAvatarPlaceholder(p.author?.name);
-      const authorName = escapeHtml(p.author?.name || 'Потребител');
       const shareCount = safeCount(p.shareCount ?? 0);
       const stats = buildPostStats(p);
       const ownerActions = canLike && isOwnPost ? buildPostOwnerActions(p.id) : '';
       el.innerHTML = `
         <div class="post-header">
-          <img class="avatar" src="${authorPhoto}" alt="${authorName}">
-          <div>
-            ${authorMarkup}
-            <div class="post-meta">${new Date(p.createdAt).toLocaleString()}</div>
-          </div>
+          ${authorMarkup}
+          <div class="post-meta">${new Date(p.createdAt).toLocaleString()}</div>
         </div>
         <div class="post-text">${escapeHtml(p.text)}</div>
         ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
@@ -1409,6 +1407,7 @@ function getAuthHeaders() {
     initializePostLikeButtons(postsList);
     initializePostRetweetButtons(postsList);
     posts.forEach(p => hydratePostCommentCount(p.id));
+    hydrateUserAvatars(postsList);
   }
 
   async function toggleComments(button) {
@@ -1530,6 +1529,7 @@ function getAuthHeaders() {
     });
     commentsListEl.appendChild(frag);
     initializeCommentLikeButtons(commentsListEl);
+    hydrateUserAvatars(commentsListEl);
     
     // Render pagination if needed
     if (paginationState && paginationState.totalPages > 1) {
@@ -2479,16 +2479,14 @@ function getAuthHeaders() {
       const ownerActions = isOwnPost ? buildPostOwnerActions(p.id) : '';
       el.innerHTML = `
         <div class="post-header">
-          <div>
-            ${authorMarkup}
-            <div class="post-meta">${escapeHtml(String(p.category || ''))} ${p.subcategory ? '• ' + escapeHtml(String(p.subcategory)) : ''}</div>
-          </div>
+          ${authorMarkup}
+          <div class="post-meta">${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</div>
         </div>
         <div class="post-text">${escapeHtml(String(p.postText || ''))}</div>
         <div class="post-media"></div>
         ${stats}
+        <div class="post-meta">${escapeHtml(String(p.category || ''))} ${p.subcategory ? '• ' + escapeHtml(String(p.subcategory)) : ''}</div>
         ${ownerActions}
-        <div class="post-meta">${p.createdAt ? new Date(p.createdAt).toLocaleString() : ''}</div>
         <div class="post-actions">
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
             <span class="like-heart" aria-hidden="true">♡</span>
@@ -2535,6 +2533,7 @@ function getAuthHeaders() {
     initializePostLikeButtons(postsList);
     initializePostRetweetButtons(postsList);
     items.forEach(p => hydratePostCommentCount(p.id));
+    hydrateUserAvatars(postsList);
   }
 
   async function requestSignedDownloadUrl(fileName) {
@@ -2741,13 +2740,20 @@ function getAuthHeaders() {
 
   function buildUserProfileLabel(name, userId, className = 'owner-name') {
     const safeName = escapeHtml(name || 'Потребител');
-    const rawId = userId !== undefined && userId !== null ? String(userId) : '';
-    const normalizedId = normalizeUserId(rawId);
-    if (!normalizedId) {
-      return `<span class="${className}">${safeName}</span>`;
+    const avatar = buildUserAvatarImg(userId, name);
+    if (!userId) {
+      return `<span class="user-chip">${avatar}<span class="user-chip-label ${className}">${safeName}</span></span>`;
     }
+    const rawId = String(userId);
     const encodedName = encodeURIComponent(name || '');
-    return `<button type="button" class="user-profile-link ${className}" data-user-id="${escapeAttribute(normalizedId)}" data-user-raw-id="${escapeAttribute(rawId)}" data-user-name="${encodedName}">${safeName}</button>`;
+    return `
+      <span class="user-chip">
+        ${avatar}
+        <button type="button" class="user-profile-link ${className}" data-user-id="${escapeAttribute(rawId)}" data-user-raw-id="${escapeAttribute(rawId)}" data-user-name="${encodedName}">
+          ${safeName}
+        </button>
+      </span>
+    `;
   }
 
   function rememberPostOwner(postId, ownerId) {
@@ -2810,6 +2816,176 @@ function getAuthHeaders() {
       facebookName: base.facebookName || base.userName || authState?.name || '',
       createdAt: base.createdAt || new Date().toISOString()
     };
+  }
+  async function ensureProfilePhoto(userId) {
+    if (!userId) return null;
+    if (profilePhotoCache[userId] !== undefined) return profilePhotoCache[userId];
+    if (!profilePhotoPending[userId]) {
+      profilePhotoPending[userId] = (async () => {
+        try {
+          const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile/picture`, {
+            headers: { accept: 'image/*', ...getAuthHeaders() }
+          });
+          if (!resp.ok) throw new Error('Failed to fetch profile photo');
+          const blob = await resp.blob();
+          const url = URL.createObjectURL(blob);
+          profilePhotoCache[userId] = url;
+          return url;
+        } catch (error) {
+          profilePhotoCache[userId] = null;
+          return null;
+        } finally {
+          delete profilePhotoPending[userId];
+        }
+      })();
+    }
+    return profilePhotoPending[userId];
+  }
+
+  function invalidateProfilePhoto(userId) {
+    if (!userId) return;
+    const existing = profilePhotoCache[userId];
+    if (existing) {
+      URL.revokeObjectURL(existing);
+    }
+    delete profilePhotoCache[userId];
+  }
+
+  function clearProfilePhotoCache() {
+    Object.keys(profilePhotoCache).forEach(id => invalidateProfilePhoto(id));
+  }
+
+  function hydrateUserAvatars(root = document) {
+    if (!root) return;
+    const imgs = root.querySelectorAll('img[data-user-avatar]');
+    imgs.forEach(img => {
+      const userId = img.dataset.userAvatar;
+      if (!userId) return;
+      if (profilePhotoCache[userId] !== undefined) {
+        if (profilePhotoCache[userId]) img.src = profilePhotoCache[userId];
+        else if (img.dataset.avatarFallback) img.src = img.dataset.avatarFallback;
+        return;
+      }
+      if (img.dataset.avatarLoading === 'true') return;
+      img.dataset.avatarLoading = 'true';
+      ensureProfilePhoto(userId)
+        .then(url => {
+          if (url) {
+            img.src = url;
+          } else if (img.dataset.avatarFallback) {
+            img.src = img.dataset.avatarFallback;
+          }
+        })
+        .finally(() => {
+          img.dataset.avatarLoading = '';
+        });
+    });
+  }
+
+  async function displayProfilePhoto(userId, isOwnProfile) {
+    if (!profilePhotoDisplay) return;
+    profilePhotoDisplay.dataset.hasPhoto = '';
+    if (!userId) {
+      profilePhotoDisplay.src = getAvatarPlaceholder(activeProfileDisplayName || '');
+      updateProfilePhotoControls(isOwnProfile);
+      return;
+    }
+    const cached = profilePhotoCache[userId];
+    if (cached) {
+      profilePhotoDisplay.src = cached;
+      profilePhotoDisplay.dataset.hasPhoto = 'true';
+      updateProfilePhotoControls(isOwnProfile);
+      return;
+    }
+    profilePhotoDisplay.src = getAvatarPlaceholder(activeProfileDisplayName || '');
+    try {
+      const url = await ensureProfilePhoto(userId);
+      if (url) {
+        profilePhotoDisplay.src = url;
+        profilePhotoDisplay.dataset.hasPhoto = 'true';
+      } else {
+        profilePhotoDisplay.dataset.hasPhoto = '';
+      }
+    } catch (error) {
+      profilePhotoDisplay.dataset.hasPhoto = '';
+    }
+    updateProfilePhotoControls(isOwnProfile);
+  }
+
+  function updateProfilePhotoControls(isOwnProfile) {
+    if (profilePhotoActions) profilePhotoActions.classList.toggle('hidden', !isOwnProfile);
+    if (btnProfilePhotoDelete) {
+      const hasPhoto = profilePhotoDisplay?.dataset.hasPhoto === 'true';
+      btnProfilePhotoDelete.disabled = !isOwnProfile || !hasPhoto;
+    }
+  }
+
+  async function onProfilePhotoSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const userId = getSafeUserId();
+    if (!userId) return;
+    if (normalizeUserId(activeProfileUserId) !== normalizeUserId(userId)) {
+      showToast('Можете да променяте само своята снимка.', 'error');
+      event.target.value = '';
+      return;
+    }
+    showGlobalSpinner(true);
+    try {
+      await uploadProfilePhoto(userId, file);
+      invalidateProfilePhoto(userId);
+      await displayProfilePhoto(userId, true);
+      hydrateUserAvatars(document);
+      showToast('Снимката беше обновена.');
+    } catch (error) {
+      console.error('Failed to upload profile photo', error);
+      showToast('Неуспешно качване на снимката.', 'error');
+    } finally {
+      showGlobalSpinner(false);
+      event.target.value = '';
+    }
+  }
+
+  async function onProfilePhotoDelete() {
+    const userId = getSafeUserId();
+    if (!userId) return;
+    if (normalizeUserId(activeProfileUserId) !== normalizeUserId(userId)) {
+      showToast('Можете да променяте само своята снимка.', 'error');
+      return;
+    }
+    if (!confirm('Сигурни ли сте, че искате да премахнете снимката?')) return;
+    showGlobalSpinner(true);
+    try {
+      await deleteProfilePhoto(userId);
+      invalidateProfilePhoto(userId);
+      await displayProfilePhoto(userId, true);
+      hydrateUserAvatars(document);
+      showToast('Снимката беше премахната.');
+    } catch (error) {
+      console.error('Failed to delete profile photo', error);
+      showToast('Неуспешно премахване на снимката.', 'error');
+    } finally {
+      showGlobalSpinner(false);
+    }
+  }
+
+  async function uploadProfilePhoto(userId, file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile/picture`, {
+      method: 'PUT',
+      headers: { ...getAuthHeaders() },
+      body: formData
+    });
+    if (!resp.ok) throw new Error('Failed to upload profile photo');
+  }
+
+  async function deleteProfilePhoto(userId) {
+    const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile/picture`, {
+      method: 'DELETE',
+      headers: { ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to delete profile photo');
   }
 
   function updatePostTextInDom(postId, newText) {
@@ -2945,6 +3121,16 @@ function getAuthHeaders() {
     const initial = (name || 'U').trim()[0]?.toUpperCase() || 'U';
     // Use UI Avatars as a simple placeholder
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=1f2937&color=f8fafc&rounded=true&size=64`;
+  }
+
+  function buildUserAvatarImg(userId, name, className = 'user-avatar-thumb') {
+    const fallback = getAvatarPlaceholder(name);
+    if (!userId) {
+      return `<img class="${className}" src="${fallback}" alt="${escapeHtml(name || 'Потребител')}">`;
+    }
+    const cached = profilePhotoCache[userId];
+    const src = cached || fallback;
+    return `<img class="${className}" src="${src}" alt="${escapeHtml(name || 'Потребител')}" data-user-avatar="${escapeAttribute(String(userId))}" data-avatar-fallback="${fallback}">`;
   }
 
   function renderTags(tags) {

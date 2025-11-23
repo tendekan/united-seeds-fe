@@ -123,7 +123,8 @@ html, body {
 .post-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
 .post-header { display: flex; align-items: center; gap: 8px; }
 .post-meta { color: var(--muted); font-size: 12px; }
-.user-profile-link { background: none; border: none; padding: 0; color: var(--primary-600); font-weight: 600; cursor: pointer; font-size: inherit; text-decoration: underline; }
+.user-profile-link { background: none; border: none; padding: 0; color: var(--primary-600); font-weight: 600; cursor: pointer; font-size: inherit; text-decoration: none; }
+.user-profile-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .user-profile-link:disabled { color: var(--muted); cursor: default; text-decoration: none; }
 .user-profile-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .retweet-icon { font-size: 14px; margin-right: 4px; }
@@ -173,6 +174,21 @@ html, body {
   gap: 8px;
   margin-top: 8px;
 }
+.retweet-badge { font-size: 12px; color: var(--primary); display: inline-flex; align-items: center; gap: 4px; }
+.retweet-badge::before { content: '⟳'; font-size: 13px; }
+.post-stats { font-size: 12px; color: var(--muted); }
+.profile-photo-block { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.profile-photo-display { width: 96px; height: 96px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover; background: #f8fafc; }
+.profile-photo-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.profile-photo-actions.hidden { display: none; }
+.profile-photo-actions input[type="file"] { display: none; }
+.user-chip { display: inline-flex; align-items: center; gap: 6px; }
+.user-avatar-thumb { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); object-fit: cover; background: #e2e8f0; }
+.user-chip button { background: none; border: none; color: var(--primary-600); cursor: pointer; font-weight: 600; padding: 0; }
+.user-chip button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.user-chip button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.user-chip .user-chip-label { font-weight: 600; color: var(--text); }
+.like-user { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
 .retweet-badge { font-size: 12px; color: var(--primary); display: inline-flex; align-items: center; gap: 4px; }
 .retweet-badge::before { content: '⟳'; font-size: 13px; }
 .post-stats { font-size: 12px; color: var(--muted); }
@@ -309,7 +325,7 @@ textarea { resize: vertical; }
 .likes-modal-body { border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--card); max-height: calc(70vh - 80px); overflow-y: auto; display: grid; gap: 10px; }
 .likes-modal-body .like-user { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(148,163,184,0.25); }
 .likes-modal-body .like-user:last-child { border-bottom: none; }
-.likes-modal-body .like-initial { width: 30px; height: 30px; border-radius: 999px; background: rgba(56,142,60,0.15); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary-700); }
+.likes-modal-body .like-user .user-chip { gap: 8px; }
 .likes-modal-body .like-empty { text-align: center; padding: 16px 0; color: var(--muted); }
 .modal-actions { display: grid; gap: 8px; }
 .modal-close { position: absolute; top: 8px; right: 8px; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; }
