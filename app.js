@@ -2861,6 +2861,7 @@ function getAuthHeaders() {
     }
     if (typeof payload === 'object') {
       const candidateKeys = [
+        'pictureFullUrl',
         'pictureUrl',
         'url',
         'imageUrl',
@@ -3005,8 +3006,9 @@ function getAuthHeaders() {
     showGlobalSpinner(true);
     try {
       const result = await uploadProfilePhoto(userId, file);
-      if (result?.pictureUrl) {
-        profilePhotoCache[userId] = result.pictureUrl;
+      const newPhotoUrl = result?.pictureFullUrl || result?.pictureUrl || null;
+      if (newPhotoUrl) {
+        profilePhotoCache[userId] = newPhotoUrl;
       } else {
         invalidateProfilePhoto(userId);
       }
@@ -3050,8 +3052,9 @@ function getAuthHeaders() {
     const uploadUrl = ticket.uploadUrl || ticket.signedUrl || ticket.url;
     const method = ticket.method || ticket.httpMethod || 'PUT';
     const uploadHeaders = ticket.headers || ticket.uploadHeaders || {};
-    const pictureUrl = ticket.pictureUrl || ticket.photoUrl || ticket.publicUrl || ticket.downloadUrl;
-    return { uploadUrl, method, uploadHeaders, pictureUrl };
+    const pictureFullUrl = ticket.pictureFullUrl || ticket.fullUrl || ticket.originalUrl;
+    const pictureUrl = pictureFullUrl || ticket.pictureUrl || ticket.photoUrl || ticket.publicUrl || ticket.downloadUrl;
+    return { uploadUrl, method, uploadHeaders, pictureUrl, pictureFullUrl };
   }
 
   async function requestProfilePhotoUploadUrl(userId, fileName, contentType) {
@@ -3104,10 +3107,10 @@ function getAuthHeaders() {
     const contentType = inferContentType(file);
     const fileName = sanitizeFileName(file.name, contentType);
     const ticketResponse = await requestProfilePhotoUploadUrl(userId, fileName, contentType);
-    const { uploadUrl, method, uploadHeaders, pictureUrl } = normalizeUploadTicket(ticketResponse);
+    const { uploadUrl, method, uploadHeaders, pictureUrl, pictureFullUrl } = normalizeUploadTicket(ticketResponse);
     if (!uploadUrl) throw new Error('Backend did not return upload URL');
     await uploadFileToSignedUrl(uploadUrl, file, contentType, method, uploadHeaders);
-    return { pictureUrl };
+    return { pictureUrl: pictureFullUrl || pictureUrl || null, pictureFullUrl: pictureFullUrl || pictureUrl || null };
   }
 
   async function deleteProfilePhoto(userId) {
