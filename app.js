@@ -208,6 +208,9 @@ function getAuthHeaders() {
   const likesModalClose = document.getElementById('likes-modal-close');
   const likesModalTitle = document.getElementById('likes-modal-title');
   const likesModalBody = document.getElementById('likes-modal-body');
+  const photoModal = document.getElementById('photo-modal');
+  const photoModalClose = document.getElementById('photo-modal-close');
+  const photoModalImg = document.getElementById('photo-modal-img');
 
   // ---------- Initialization ----------
   function init() {
@@ -246,6 +249,11 @@ function getAuthHeaders() {
     if (likesModal) likesModal.addEventListener('click', (e) => {
       const target = e.target;
       if (target && target.getAttribute && target.getAttribute('data-close') === 'true') closeLikesModal();
+    });
+    if (photoModalClose) photoModalClose.addEventListener('click', closePhotoModal);
+    if (photoModal) photoModal.addEventListener('click', (e) => {
+      const target = e.target;
+      if (target && target.getAttribute && target.getAttribute('data-close') === 'true') closePhotoModal();
     });
     if (btnSignout) {
       btnSignout.addEventListener('click', signOut);
@@ -289,6 +297,7 @@ function getAuthHeaders() {
         openProfile(activeProfileUserId, { displayName: activeProfileDisplayName, forceReload: true });
       }
     });
+    if (profilePhotoDisplay) profilePhotoDisplay.addEventListener('click', onProfilePhotoClick);
     if (profilePhotoUpload) profilePhotoUpload.addEventListener('change', onProfilePhotoSelected);
     if (btnProfilePhotoDelete) btnProfilePhotoDelete.addEventListener('click', onProfilePhotoDelete);
     setupCategories();
@@ -1083,7 +1092,8 @@ function getAuthHeaders() {
   function maybeUnlockBodyScroll() {
     const authHidden = !authModal || authModal.classList.contains('hidden');
     const likesHidden = !likesModal || likesModal.classList.contains('hidden');
-    if (authHidden && likesHidden) {
+    const photoHidden = !photoModal || photoModal.classList.contains('hidden');
+    if (authHidden && likesHidden && photoHidden) {
       document.body.style.overflow = '';
     }
   }
@@ -1091,6 +1101,28 @@ function getAuthHeaders() {
   function setLikesModalContent(html) {
     if (!likesModalBody) return;
     likesModalBody.innerHTML = html;
+  }
+
+  function openPhotoModal(url) {
+    if (!photoModal || !photoModalImg || !url) return;
+    photoModalImg.src = url;
+    photoModal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePhotoModal() {
+    if (!photoModal) return;
+    photoModal.classList.add('hidden');
+    if (photoModalImg) photoModalImg.removeAttribute('src');
+    maybeUnlockBodyScroll();
+  }
+
+  function onProfilePhotoClick() {
+    if (!profilePhotoDisplay) return;
+    if (profilePhotoDisplay.dataset.hasPhoto !== 'true') return;
+    const url = profilePhotoDisplay.dataset.photoUrl || profilePhotoDisplay.src;
+    if (!url) return;
+    openPhotoModal(url);
   }
 
   function renderLikesModalList(items) {
@@ -2920,6 +2952,7 @@ function getAuthHeaders() {
   async function displayProfilePhoto(userId, isOwnProfile) {
     if (!profilePhotoDisplay) return;
     profilePhotoDisplay.dataset.hasPhoto = '';
+    profilePhotoDisplay.dataset.photoUrl = '';
     if (!userId) {
       profilePhotoDisplay.src = getAvatarPlaceholder(activeProfileDisplayName || '');
       updateProfilePhotoControls(isOwnProfile);
@@ -2929,6 +2962,7 @@ function getAuthHeaders() {
     if (cached) {
       profilePhotoDisplay.src = cached;
       profilePhotoDisplay.dataset.hasPhoto = 'true';
+      profilePhotoDisplay.dataset.photoUrl = cached;
       updateProfilePhotoControls(isOwnProfile);
       return;
     }
@@ -2938,11 +2972,14 @@ function getAuthHeaders() {
       if (url) {
         profilePhotoDisplay.src = url;
         profilePhotoDisplay.dataset.hasPhoto = 'true';
+        profilePhotoDisplay.dataset.photoUrl = url;
       } else {
         profilePhotoDisplay.dataset.hasPhoto = '';
+        profilePhotoDisplay.dataset.photoUrl = '';
       }
     } catch (error) {
       profilePhotoDisplay.dataset.hasPhoto = '';
+      profilePhotoDisplay.dataset.photoUrl = '';
     }
     updateProfilePhotoControls(isOwnProfile);
   }
