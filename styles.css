@@ -323,8 +323,9 @@ textarea { resize: vertical; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(3px); }
 .modal-dialog { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; width: min(92vw, 320px); box-shadow: 0 30px 80px rgba(0,0,0,.18); display: grid; gap: 12px; backdrop-filter: var(--glass); animation: scaleIn 220ms ease-out; }
 .photo-modal-dialog {
-  width: min(95vw, 960px);
-  max-height: 85vh;
+  width: auto;
+  max-width: 95vw;
+  max-height: 90vh;
   padding: 0;
   border: none;
   background: transparent;
@@ -335,9 +336,10 @@ textarea { resize: vertical; }
 }
 .photo-modal-dialog .modal-close { background: rgba(15,23,42,0.75); color: #f8fafc; border: none; }
 .photo-modal-img {
-  width: min(95vw, 960px);
-  max-height: 85vh;
+  width: auto;
   height: auto;
+  max-width: 95vw;
+  max-height: 90vh;
   border-radius: 18px;
   box-shadow: 0 30px 80px rgba(0,0,0,.45);
   display: block;
