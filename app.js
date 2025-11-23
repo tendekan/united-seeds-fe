@@ -1915,7 +1915,7 @@ try {
     }
   }
 
-  async function fetchPostLikeCount(postId) {
+  async function fetchPostLikesCount(postId) {
     const resp = await authenticatedFetch(`${BACKEND_URL}/posts/${postId}/likes/count`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
@@ -1924,7 +1924,7 @@ try {
     return Number(data) || 0;
   }
 
-  async function fetchCommentLikeCount(commentId) {
+  async function fetchCommentLikesCount(commentId) {
     const resp = await authenticatedFetch(`${BACKEND_URL}/comments/${commentId}/likes/count`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
