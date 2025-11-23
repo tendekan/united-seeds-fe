@@ -195,67 +195,140 @@ html, body {
 .post-stats { font-size: 12px; color: var(--muted); }
 
 /* Services view */
-.services-view { display: grid; }
-.category-tiles { display: grid; grid-template-columns: repeat(5, 100px); column-gap: 6px; row-gap: 4px; justify-content: start; align-content: start; }
-.category-tile { display: grid; place-items: center; gap: 6px; background: rgba(161,200,163,0.25); color: #2a3b44; border: 1px solid rgba(74,101,114,0.35); border-radius: 10px; width: 100px; height: 100px; padding: 8px; cursor: pointer; }
-.category-tile:hover { border-color: rgba(74,101,114,0.6); box-shadow: 0 10px 28px rgba(0,0,0,.18); transform: translateY(-1px); }
-.ct-icon { font-size: 36px; line-height: 1; }
-.ct-title { display: block; font-weight: 800; font-size: 12px; letter-spacing: .2px; text-align: center; }
-
-@media (max-width: 900px) {
-  .category-tiles { grid-template-columns: repeat(3, 100px); column-gap: 6px; row-gap: 4px; }
+.services-view {
+  display: grid;
+  gap: 24px;
+  padding: 8px 0;
 }
 
-@media (max-width: 480px) {
-  .category-tiles { grid-template-columns: repeat(2, 100px); column-gap: 6px; row-gap: 4px; }
+.category-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  justify-content: center;
 }
 
-/* Category-specific colors */
-.category-tile[data-category="gardening"] { background: rgba(52,211,153,0.18); border-color: rgba(52,211,153,0.5); color: #eafff7; }
-.category-tile[data-category="gardening"]:hover { background: rgba(52,211,153,0.28); border-color: rgba(52,211,153,0.85); }
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  aspect-ratio: 1;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
 
-.category-tile[data-category="home-repairs"] { background: rgba(250,204,21,0.18); border-color: rgba(250,204,21,0.5); color: #fffbe6; }
-.category-tile[data-category="home-repairs"]:hover { background: rgba(250,204,21,0.28); border-color: rgba(250,204,21,0.85); }
+.category-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
 
-.category-tile[data-category="short-stays"] { background: rgba(59,130,246,0.18); border-color: rgba(59,130,246,0.5); color: #eaf2ff; }
-.category-tile[data-category="short-stays"]:hover { background: rgba(59,130,246,0.28); border-color: rgba(59,130,246,0.85); }
+.category-tile:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: var(--primary);
+}
 
-.category-tile[data-category="long-stays"] { background: rgba(236,72,153,0.18); border-color: rgba(236,72,153,0.5); color: #ffeaf6; }
-.category-tile[data-category="long-stays"]:hover { background: rgba(236,72,153,0.28); border-color: rgba(236,72,153,0.85); }
+.category-tile:hover::before {
+  opacity: 1;
+}
 
-/* Additional category accents */
-.category-tile[data-category="building"] { background: rgba(249,115,22,0.18); border-color: rgba(249,115,22,0.5); color: #fff3e9; }
-.category-tile[data-category="building"]:hover { background: rgba(249,115,22,0.28); border-color: rgba(249,115,22,0.85); }
+.ct-icon {
+  font-size: 42px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  transition: transform 0.3s ease;
+}
 
-.category-tile[data-category="finance"] { background: rgba(45,212,191,0.18); border-color: rgba(45,212,191,0.5); color: #e6fffb; }
-.category-tile[data-category="finance"]:hover { background: rgba(45,212,191,0.28); border-color: rgba(45,212,191,0.85); }
+.category-tile:hover .ct-icon {
+  transform: scale(1.1);
+}
 
-.category-tile[data-category="it-lessons"] { background: rgba(139,92,246,0.18); border-color: rgba(139,92,246,0.5); color: #f2eaff; }
-.category-tile[data-category="it-lessons"]:hover { background: rgba(139,92,246,0.28); border-color: rgba(139,92,246,0.85); }
+.ct-title {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  text-align: center;
+  line-height: 1.3;
+  color: var(--brand-slate);
+}
 
-.category-tile[data-category="car-repairs"] { background: rgba(248,113,113,0.18); border-color: rgba(248,113,113,0.5); color: #ffeeee; }
-.category-tile[data-category="car-repairs"]:hover { background: rgba(248,113,113,0.28); border-color: rgba(248,113,113,0.85); }
+/* Category-specific styling with modern gradients */
+.category-tile[data-category="gardening"] { background: linear-gradient(145deg, #ecfdf5, #d1fae5); border-color: #a7f3d0; color: #065f46; }
+.category-tile[data-category="gardening"] .ct-title { color: #064e3b; }
 
-.category-tile[data-category="sport"] { background: rgba(132,204,22,0.18); border-color: rgba(132,204,22,0.5); color: #f4ffe6; }
-.category-tile[data-category="sport"]:hover { background: rgba(132,204,22,0.28); border-color: rgba(132,204,22,0.85); }
+.category-tile[data-category="home-repairs"] { background: linear-gradient(145deg, #fefce8, #fef9c3); border-color: #fde047; color: #854d0e; }
+.category-tile[data-category="home-repairs"] .ct-title { color: #713f12; }
 
-.category-tile[data-category="pets"] { background: rgba(250,164,180,0.18); border-color: rgba(250,164,180,0.5); color: #fff0f4; }
-.category-tile[data-category="pets"]:hover { background: rgba(250,164,180,0.28); border-color: rgba(250,164,180,0.85); }
+.category-tile[data-category="short-stays"] { background: linear-gradient(145deg, #eff6ff, #dbeafe); border-color: #bfdbfe; color: #1e40af; }
+.category-tile[data-category="short-stays"] .ct-title { color: #1e3a8a; }
 
-.category-tile[data-category="art"] { background: rgba(217,119,6,0.18); border-color: rgba(217,119,6,0.5); color: #fff5e6; }
-.category-tile[data-category="art"]:hover { background: rgba(217,119,6,0.28); border-color: rgba(217,119,6,0.85); }
+.category-tile[data-category="long-stays"] { background: linear-gradient(145deg, #fdf2f8, #fce7f3); border-color: #fbcfe8; color: #9d174d; }
+.category-tile[data-category="long-stays"] .ct-title { color: #831843; }
 
-.category-tile[data-category="beauty"] { background: rgba(236,72,153,0.18); border-color: rgba(236,72,153,0.5); color: #ffeaf6; }
-.category-tile[data-category="beauty"]:hover { background: rgba(236,72,153,0.28); border-color: rgba(236,72,153,0.85); }
+.category-tile[data-category="building"] { background: linear-gradient(145deg, #fff7ed, #ffedd5); border-color: #fed7aa; color: #9a3412; }
+.category-tile[data-category="building"] .ct-title { color: #7c2d12; }
 
-.category-tile[data-category="healthcare"] { background: rgba(56,189,248,0.18); border-color: rgba(56,189,248,0.5); color: #eaf7ff; }
-.category-tile[data-category="healthcare"]:hover { background: rgba(56,189,248,0.28); border-color: rgba(56,189,248,0.85); }
+.category-tile[data-category="finance"] { background: linear-gradient(145deg, #f0fdfa, #ccfbf1); border-color: #99f6e4; color: #115e59; }
+.category-tile[data-category="finance"] .ct-title { color: #134e4a; }
 
-.category-tile[data-category="fashion"] { background: rgba(217,70,239,0.18); border-color: rgba(217,70,239,0.5); color: #feeaff; }
-.category-tile[data-category="fashion"]:hover { background: rgba(217,70,239,0.28); border-color: rgba(217,70,239,0.85); }
+.category-tile[data-category="it-lessons"] { background: linear-gradient(145deg, #f5f3ff, #ede9fe); border-color: #ddd6fe; color: #5b21b6; }
+.category-tile[data-category="it-lessons"] .ct-title { color: #4c1d95; }
 
-.category-tile[data-category="cooking"] { background: rgba(251,146,60,0.18); border-color: rgba(251,146,60,0.5); color: #fff3e9; }
-.category-tile[data-category="cooking"]:hover { background: rgba(251,146,60,0.28); border-color: rgba(251,146,60,0.85); }
+.category-tile[data-category="car-repairs"] { background: linear-gradient(145deg, #fef2f2, #fee2e2); border-color: #fecaca; color: #991b1b; }
+.category-tile[data-category="car-repairs"] .ct-title { color: #7f1d1d; }
+
+.category-tile[data-category="sport"] { background: linear-gradient(145deg, #f7fee7, #ecfccb); border-color: #d9f99d; color: #3f6212; }
+.category-tile[data-category="sport"] .ct-title { color: #365314; }
+
+.category-tile[data-category="pets"] { background: linear-gradient(145deg, #fff1f2, #ffe4e6); border-color: #fecdd3; color: #9f1239; }
+.category-tile[data-category="pets"] .ct-title { color: #881337; }
+
+.category-tile[data-category="art"] { background: linear-gradient(145deg, #fffbeb, #fef3c7); border-color: #fde68a; color: #92400e; }
+.category-tile[data-category="art"] .ct-title { color: #78350f; }
+
+.category-tile[data-category="beauty"] { background: linear-gradient(145deg, #fdf2f8, #fce7f3); border-color: #fbcfe8; color: #be185d; }
+.category-tile[data-category="beauty"] .ct-title { color: #9d174d; }
+
+.category-tile[data-category="healthcare"] { background: linear-gradient(145deg, #f0f9ff, #e0f2fe); border-color: #bae6fd; color: #075985; }
+.category-tile[data-category="healthcare"] .ct-title { color: #0c4a6e; }
+
+.category-tile[data-category="fashion"] { background: linear-gradient(145deg, #fdf4ff, #fae8ff); border-color: #f0abfc; color: #86198f; }
+.category-tile[data-category="fashion"] .ct-title { color: #701a75; }
+
+.category-tile[data-category="cooking"] { background: linear-gradient(145deg, #fff7ed, #ffedd5); border-color: #fed7aa; color: #ea580c; }
+.category-tile[data-category="cooking"] .ct-title { color: #c2410c; }
+
+@media (max-width: 600px) {
+  .category-tiles {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+  }
+  .category-tile {
+    padding: 12px;
+    border-radius: 16px;
+  }
+  .ct-icon {
+    font-size: 32px;
+  }
+  .ct-title {
+    font-size: 12px;
+  }
+}
 
 @media (max-width: 960px) {
   .app-shell { grid-template-columns: 1fr; min-height: auto; }
