@@ -752,12 +752,14 @@ body {
   display: grid;
   gap: 24px;
   padding: 8px 0;
+  align-items: start;
 }
 
 .category-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 16px;
+  align-content: start;
 }
 
 .category-tile {
