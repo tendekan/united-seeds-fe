@@ -1180,6 +1180,7 @@ try {
       profileName.textContent = authState.name || 'Потребител';
       profileEmail.textContent = authState.email || '';
       renderPosts();
+      onNavigateToOwnProfile();
     } else {
       authOutEl.classList.remove('hidden');
       authInEl.classList.add('hidden');
