@@ -716,7 +716,9 @@ try {
     const retweetInfo = forceRetweetBadge || envelope.retweet
       ? `<div class="retweet-badge">${envelope.retweetedAt ? `Споделено на ${formatDateTimeSafe(envelope.retweetedAt)}` : 'Споделено'}</div>`
       : '';
-    const categoryLine = `${escapeHtml(post.category || '')}${post.subcategory ? ' • ' + escapeHtml(post.subcategory) : ''}`;
+    const categoryBG = translateCategoryToBG(post.category || '');
+    const subcategoryBG = translateSubcategoryToBG(post.category, post.subcategory);
+    const categoryLine = `${escapeHtml(categoryBG)}${subcategoryBG ? ' • ' + escapeHtml(subcategoryBG) : ''}`;
     const el = document.createElement('div');
     el.className = 'post-card';
     el.setAttribute('data-post-id', post.id);
@@ -1020,6 +1022,32 @@ try {
       'World Cuisine': 'Световна кухня'
     }
   };
+
+  // Helper functions to translate category/subcategory to Bulgarian
+  function translateCategoryToBG(categoryKey) {
+    if (!categoryKey) return '';
+    // First try to find by key
+    if (CATEGORY_LABELS_BG[categoryKey]) {
+      return CATEGORY_LABELS_BG[categoryKey];
+    }
+    // If it's already a display label (English), try to find the key
+    const entry = CATEGORY_LABELS.find(([key, label]) => label === categoryKey);
+    if (entry) {
+      return CATEGORY_LABELS_BG[entry[0]] || categoryKey;
+    }
+    return categoryKey;
+  }
+
+  function translateSubcategoryToBG(categoryKey, subcategoryValue) {
+    if (!subcategoryValue || !categoryKey) return '';
+    // Try to find the translation
+    const translations = SUBCATEGORY_MAP_BG[categoryKey];
+    if (translations && translations[subcategoryValue]) {
+      return translations[subcategoryValue];
+    }
+    return subcategoryValue;
+  }
+
 
   function setupCategories() {
     if (!postCategory || !postSubcategory) return;
@@ -1406,7 +1434,7 @@ try {
           <div class="post-meta">${new Date(p.createdAt).toLocaleString()}</div>
         </div>
         <div class="post-text">${escapeHtml(p.text)}</div>
-        ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
+        ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(translateCategoryToBG(p.category))}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(translateSubcategoryToBG(p.category, p.subcategory))}</span>` : ''}</div>` : ''}
         ${p.videoName ? `<div class="post-meta">Attached video: ${escapeHtml(p.videoName)}</div>` : ''}
         ${stats}
         ${ownerActions}
@@ -2400,7 +2428,7 @@ try {
           </div>
         </div>
         <div class="post-text">${escapeHtml(p.text)}</div>
-        ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(p.category)}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(p.subcategory)}</span>` : ''}</div>` : ''}
+        ${p.category ? `<div class="tags"><span class="tag">${escapeHtml(translateCategoryToBG(p.category))}</span>${p.subcategory ? `<span class=\"tag\">${escapeHtml(translateSubcategoryToBG(p.category, p.subcategory))}</span>` : ''}</div>` : ''}
       `;
       frag.appendChild(el);
     });
@@ -2528,7 +2556,7 @@ try {
         <div class="post-text">${escapeHtml(String(p.postText || ''))}</div>
         <div class="post-media"></div>
         ${stats}
-        <div class="post-meta">${escapeHtml(String(p.category || ''))} ${p.subcategory ? '• ' + escapeHtml(String(p.subcategory)) : ''}</div>
+        <div class="post-meta">${escapeHtml(translateCategoryToBG(String(p.category || '')))} ${p.subcategory ? '• ' + escapeHtml(translateSubcategoryToBG(p.category, String(p.subcategory))) : ''}</div>
         ${ownerActions}
         <div class="post-actions">
           <button class="btn btn-secondary btn-sm btn-like-post" data-post-id="${p.id}" ${likeButtonAttrs}>
