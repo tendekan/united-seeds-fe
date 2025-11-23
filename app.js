@@ -54,6 +54,32 @@ try {
     return headers;
   }
 
+  // Centralized fetch wrapper that handles token expiration
+  async function authenticatedFetch(url, options = {}) {
+    const response = await fetch(url, options);
+
+    // Check if the response is 401 Unauthorized
+    if (response.status === 401) {
+      console.warn('Token expired or unauthorized. Logging out user.');
+
+      // Clear auth state and redirect to login
+      authState = null;
+      saveToStorage(STORAGE_KEYS.auth, authState);
+      resetLikeCaches();
+      renderAuthUI();
+
+      // Show a toast message to inform the user
+      showToast('Вашата сесия е изтекла. Моля, влезте отново.', 'error');
+
+      // Optionally open the auth modal
+      if (typeof openAuthModal === 'function') {
+        setTimeout(() => openAuthModal('Влез'), 500);
+      }
+    }
+
+    return response;
+  }
+
   function generateId(prefix) {
     return `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`;
   }
@@ -549,7 +575,7 @@ try {
   }
 
   async function fetchUserProfile(userId) {
-    const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/users/${userId}/profile`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to fetch profile');
@@ -557,7 +583,7 @@ try {
   }
 
   async function updateUserProfile(userId, payload) {
-    const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/users/${userId}/profile`, {
       method: 'PUT',
       headers: { 'accept': '*/*', 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(payload)
@@ -1889,8 +1915,8 @@ try {
     }
   }
 
-  async function fetchPostLikesCount(postId) {
-    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes/count`, {
+  async function fetchPostLikeCount(postId) {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/posts/${postId}/likes/count`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to fetch post like count');
@@ -1898,8 +1924,8 @@ try {
     return Number(data) || 0;
   }
 
-  async function fetchCommentLikesCount(commentId) {
-    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes/count`, {
+  async function fetchCommentLikeCount(commentId) {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/comments/${commentId}/likes/count`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to fetch comment like count');
@@ -1908,7 +1934,7 @@ try {
   }
 
   async function fetchPostLikes(postId) {
-    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/posts/${postId}/likes`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to fetch post likes');
@@ -1917,7 +1943,7 @@ try {
   }
 
   async function fetchCommentLikes(commentId) {
-    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/comments/${commentId}/likes`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to fetch comment likes');
@@ -1927,7 +1953,7 @@ try {
 
   async function fetchCommentCountOnly(postId) {
     const url = `${BACKEND_URL}/posts/${postId}/comments?page=1&size=1&sortOrder=desc`;
-    const resp = await fetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
+    const resp = await authenticatedFetch(url, { headers: { 'accept': '*/*', ...getAuthHeaders() } });
     if (!resp.ok) throw new Error('Failed to fetch comment count');
     const data = await resp.json();
     if (Array.isArray(data)) return data.length;
@@ -1939,7 +1965,7 @@ try {
   async function hasUserLikedPost(postId) {
     const userId = getSafeUserId();
     if (!userId) return false;
-    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes/user/${userId}`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/posts/${postId}/likes/user/${userId}`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to check post like');
@@ -1949,7 +1975,7 @@ try {
   async function hasUserLikedComment(commentId) {
     const userId = getSafeUserId();
     if (!userId) return false;
-    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes/user/${userId}`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/comments/${commentId}/likes/user/${userId}`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to check comment like');
@@ -1963,7 +1989,7 @@ try {
       userId: userId,
       userName: authState?.name || 'Потребител'
     });
-    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes?${params.toString()}`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/posts/${postId}/likes?${params.toString()}`, {
       method: 'POST',
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
@@ -1974,7 +2000,7 @@ try {
     const userId = getSafeUserId();
     if (!userId) throw new Error('Missing user id');
     const params = new URLSearchParams({ userId: userId });
-    const resp = await fetch(`${BACKEND_URL}/posts/${postId}/likes?${params.toString()}`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/posts/${postId}/likes?${params.toString()}`, {
       method: 'DELETE',
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
@@ -2170,7 +2196,7 @@ try {
       userId: userId,
       userName: authState?.name || 'Потребител'
     });
-    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes?${params.toString()}`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/comments/${commentId}/likes?${params.toString()}`, {
       method: 'POST',
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
@@ -2180,8 +2206,10 @@ try {
   async function unlikeComment(commentId) {
     const userId = getSafeUserId();
     if (!userId) throw new Error('Missing user id');
-    const params = new URLSearchParams({ userId: userId });
-    const resp = await fetch(`${BACKEND_URL}/comments/${commentId}/likes?${params.toString()}`, {
+    const params = new URLSearchParams({
+      userId: userId
+    });
+    const resp = await authenticatedFetch(`${BACKEND_URL}/comments/${commentId}/likes?${params.toString()}`, {
       method: 'DELETE',
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
@@ -2408,7 +2436,7 @@ try {
   }
 
   async function deletePostRequest(postId) {
-    const resp = await fetch(`${BACKEND_URL}/posts/${postId}`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/posts/${postId}`, {
       method: 'DELETE',
       headers: {
         'accept': '*/*',
@@ -2883,7 +2911,7 @@ try {
   }
 
   async function fetchSinglePost(postId) {
-    const resp = await fetch(`${BACKEND_URL}/posts/${postId}`, {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/posts/${postId}`, {
       headers: { 'accept': '*/*', ...getAuthHeaders() }
     });
     if (!resp.ok) throw new Error('Failed to fetch post');
