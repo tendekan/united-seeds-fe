@@ -2817,25 +2817,38 @@ function getAuthHeaders() {
       createdAt: base.createdAt || new Date().toISOString()
     };
   }
-  function extractPhotoUrlCandidate(payload) {
-    if (!payload) return '';
+  function extractPhotoUrlCandidate(payload, depth = 0) {
+    if (!payload || depth > 6) return '';
     if (typeof payload === 'string') return payload;
     if (Array.isArray(payload)) {
       for (const entry of payload) {
-        const nested = extractPhotoUrlCandidate(entry);
+        const nested = extractPhotoUrlCandidate(entry, depth + 1);
         if (nested) return nested;
       }
       return '';
     }
     if (typeof payload === 'object') {
-      const candidateKeys = ['url', 'imageUrl', 'photoUrl', 'href', 'link', 'signedUrl', 'picture', 'src'];
+      const candidateKeys = [
+        'url',
+        'imageUrl',
+        'photoUrl',
+        'href',
+        'link',
+        'signedUrl',
+        'picture',
+        'src',
+        'photo',
+        'photo_url',
+        'mediaLink',
+        'downloadUrl'
+      ];
       for (const key of candidateKeys) {
         if (typeof payload[key] === 'string' && payload[key].trim()) {
           return payload[key];
         }
       }
-      if (payload.data) {
-        const nested = extractPhotoUrlCandidate(payload.data);
+      for (const value of Object.values(payload)) {
+        const nested = extractPhotoUrlCandidate(value, depth + 1);
         if (nested) return nested;
       }
     }
