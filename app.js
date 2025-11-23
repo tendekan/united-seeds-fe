@@ -3004,8 +3004,12 @@ function getAuthHeaders() {
     }
     showGlobalSpinner(true);
     try {
-      await uploadProfilePhoto(userId, file);
-      invalidateProfilePhoto(userId);
+      const result = await uploadProfilePhoto(userId, file);
+      if (result?.pictureUrl) {
+        profilePhotoCache[userId] = result.pictureUrl;
+      } else {
+        invalidateProfilePhoto(userId);
+      }
       await displayProfilePhoto(userId, true);
       hydrateUserAvatars(document);
       showToast('Снимката беше обновена.');
@@ -3041,15 +3045,69 @@ function getAuthHeaders() {
     }
   }
 
-  async function uploadProfilePhoto(userId, file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile/picture`, {
-      method: 'PUT',
-      headers: { ...getAuthHeaders() },
-      body: formData
+  function normalizeUploadTicket(ticket) {
+    if (!ticket || typeof ticket !== 'object') return {};
+    const uploadUrl = ticket.uploadUrl || ticket.signedUrl || ticket.url;
+    const method = ticket.method || ticket.httpMethod || 'PUT';
+    const uploadHeaders = ticket.headers || ticket.uploadHeaders || {};
+    const pictureUrl = ticket.pictureUrl || ticket.photoUrl || ticket.publicUrl || ticket.downloadUrl;
+    return { uploadUrl, method, uploadHeaders, pictureUrl };
+  }
+
+  async function requestProfilePhotoUploadUrl(userId, fileName, contentType) {
+    const payload = {
+      fileName: fileName || `profile-${Date.now()}`,
+      contentType: contentType || 'application/octet-stream'
+    };
+    const resp = await fetch(`${BACKEND_URL}/users/${userId}/profile/picture/upload-url`, {
+      method: 'POST',
+      headers: { accept: '*/*', 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(payload)
     });
-    if (!resp.ok) throw new Error('Failed to upload profile photo');
+    if (!resp.ok) throw new Error('Failed to obtain upload URL');
+    return resp.json();
+  }
+
+  async function uploadFileToSignedUrl(url, file, contentType, method = 'PUT', extraHeaders = {}) {
+    if (!url) throw new Error('Missing signed URL');
+    const headers = { ...extraHeaders };
+    if (contentType && !headers['Content-Type']) {
+      headers['Content-Type'] = contentType;
+    }
+    const resp = await fetch(url, {
+      method: method || 'PUT',
+      headers,
+      body: file
+    });
+    if (!resp.ok) throw new Error('Failed to upload file to signed URL');
+  }
+
+  function inferContentType(file) {
+    if (file?.type) return file.type;
+    return 'application/octet-stream';
+  }
+
+  function sanitizeFileName(name, contentType) {
+    if (name && typeof name === 'string') {
+      const trimmed = name.trim();
+      if (trimmed) {
+        const safe = trimmed.replace(/[^\w.\-]+/g, '_');
+        if (safe) return safe;
+      }
+    }
+    const ext = (contentType && contentType.split('/')[1]) || 'bin';
+    return `profile-${Date.now()}.${ext}`;
+  }
+
+  async function uploadProfilePhoto(userId, file) {
+    if (!file) throw new Error('Missing file');
+    const contentType = inferContentType(file);
+    const fileName = sanitizeFileName(file.name, contentType);
+    const ticketResponse = await requestProfilePhotoUploadUrl(userId, fileName, contentType);
+    const { uploadUrl, method, uploadHeaders, pictureUrl } = normalizeUploadTicket(ticketResponse);
+    if (!uploadUrl) throw new Error('Backend did not return upload URL');
+    await uploadFileToSignedUrl(uploadUrl, file, contentType, method, uploadHeaders);
+    return { pictureUrl };
   }
 
   async function deleteProfilePhoto(userId) {
