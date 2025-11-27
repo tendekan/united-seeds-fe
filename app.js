@@ -257,6 +257,25 @@ try {
     attachPostEventDelegation(postsList);
     attachPostEventDelegation(profilePostsList);
     attachPostEventDelegation(profileRetweetsList);
+    initCookieConsent();
+  }
+
+  function initCookieConsent() {
+    const cookieConsent = document.getElementById('cookie-consent');
+    const btnAcceptCookies = document.getElementById('btn-accept-cookies');
+
+    if (!cookieConsent || !btnAcceptCookies) return;
+
+    const cookiesAccepted = localStorage.getItem('unitedseeds.cookies_accepted');
+
+    if (!cookiesAccepted) {
+      cookieConsent.classList.remove('hidden');
+    }
+
+    btnAcceptCookies.addEventListener('click', () => {
+      localStorage.setItem('unitedseeds.cookies_accepted', 'true');
+      cookieConsent.classList.add('hidden');
+    });
   }
 
 
