@@ -772,8 +772,15 @@ try {
     cachePostData({ ...post, userId: ownerId });
     const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', ownerId, 'owner-name');
     const stats = buildPostStats(envelope);
+    let retweetLabel = 'Споделено';
+    if (envelope.retweetUserName) {
+      retweetLabel = `${escapeHtml(envelope.retweetUserName)} сподели`;
+    } else if (envelope.retweetUser && envelope.retweetUser.name) {
+      retweetLabel = `${escapeHtml(envelope.retweetUser.name)} сподели`;
+    }
+
     const retweetInfo = forceRetweetBadge || envelope.retweet
-      ? `<div class="retweet-badge">${envelope.retweetedAt ? `Споделено на ${formatDateTimeSafe(envelope.retweetedAt)}` : 'Споделено'}</div>`
+      ? `<div class="retweet-badge">${retweetLabel}${envelope.retweetedAt ? ` на ${formatDateTimeSafe(envelope.retweetedAt)}` : ''}</div>`
       : '';
     const categoryBG = translateCategoryToBG(post.category || '');
     const subcategoryBG = translateSubcategoryToBG(post.category, post.subcategory);
