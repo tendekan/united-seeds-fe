@@ -127,6 +127,16 @@
                             <div>
                                 <h2 id="profile-view-name">Профил</h2>
                                 <p id="profile-view-meta" class="muted small"></p>
+                                <div class="profile-stats">
+                                    <button id="btn-view-followers" class="btn-stat">
+                                        <span id="profile-followers-count" class="stat-value">-</span>
+                                        <span class="stat-label">Followers</span>
+                                    </button>
+                                    <button id="btn-view-following" class="btn-stat">
+                                        <span id="profile-following-count" class="stat-value">-</span>
+                                        <span class="stat-label">Following</span>
+                                    </button>
+                                </div>
                             </div>
                             <div class="profile-header-actions">
                                 <button id="btn-profile-follow" class="btn btn-primary hidden" type="button">
@@ -368,6 +378,18 @@
             <button class="modal-close" id="likes-modal-close" aria-label="Затвори">×</button>
             <h3 id="likes-modal-title">Харесвания</h3>
             <div id="likes-modal-body" class="likes-modal-body">
+                <div class="muted small">Зарежда се...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User List Modal (Generic) -->
+    <div id="user-list-modal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true">
+        <div class="modal-backdrop" data-close="true"></div>
+        <div class="modal-dialog likes-modal-dialog" role="document">
+            <button class="modal-close" id="user-list-modal-close" aria-label="Затвори">×</button>
+            <h3 id="user-list-modal-title">Users</h3>
+            <div id="user-list-modal-body" class="likes-modal-body">
                 <div class="muted small">Зарежда се...</div>
             </div>
         </div>

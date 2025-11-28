@@ -231,6 +231,14 @@ try {
   const feedPrev = document.getElementById('feed-prev');
   const feedNext = document.getElementById('feed-next');
   const feedPage = document.getElementById('feed-page');
+  const btnViewFollowers = document.getElementById('btn-view-followers');
+  const btnViewFollowing = document.getElementById('btn-view-following');
+  const profileFollowersCount = document.getElementById('profile-followers-count');
+  const profileFollowingCount = document.getElementById('profile-following-count');
+  const userListModal = document.getElementById('user-list-modal');
+  const userListModalClose = document.getElementById('user-list-modal-close');
+  const userListModalTitle = document.getElementById('user-list-modal-title');
+  const userListModalBody = document.getElementById('user-list-modal-body');
   const chkUseProfileDating = document.getElementById('opt-use-profile-dating');
   const settingsLanguage = document.getElementById('settings-language');
   const settingsCurrency = document.getElementById('settings-currency');
@@ -338,6 +346,13 @@ try {
     if (navSettings) navSettings.addEventListener('click', () => showSection('settings'));
     if (navFeed) navFeed.addEventListener('click', () => showSection('feed'));
     if (btnProfileFollow) btnProfileFollow.addEventListener('click', onFollowButtonClick);
+    if (btnViewFollowers) btnViewFollowers.addEventListener('click', () => showFollowersModal(activeProfileUserId));
+    if (btnViewFollowing) btnViewFollowing.addEventListener('click', () => showFollowingModal(activeProfileUserId));
+    if (userListModalClose) userListModalClose.addEventListener('click', closeUserListModal);
+    if (userListModal) userListModal.addEventListener('click', (e) => {
+      const target = e.target;
+      if (target && target.getAttribute && target.getAttribute('data-close') === 'true') closeUserListModal();
+    });
     if (feedPrev) feedPrev.addEventListener('click', () => changeFeedPage(-1));
     if (feedNext) feedNext.addEventListener('click', () => changeFeedPage(1));
     if (btnPost) btnPost.addEventListener('click', onCreatePost);
@@ -635,6 +650,7 @@ try {
     if (profileEditActions) profileEditActions.classList.toggle('hidden', !isProfileEditing);
     if (btnProfileEdit) btnProfileEdit.classList.toggle('hidden', !isViewingOwnProfile || isProfileEditing);
     updateFollowButton(activeProfileUserId);
+    updateProfileStats(activeProfileUserId);
   }
 
   function setProfileEditingState(enabled) {
@@ -3709,6 +3725,159 @@ try {
 
     feedPrev.disabled = feedPaginationState.page <= 1;
     feedNext.disabled = count < feedPaginationState.limit;
+  }
+
+  function updateFeedPagination(count) {
+    if (!feedPagination || !feedPrev || !feedNext || !feedPage) return;
+
+    if (feedPaginationState.page === 1 && count === 0) {
+      feedPagination.classList.add('hidden');
+      return;
+    }
+
+    feedPagination.classList.remove('hidden');
+    feedPage.textContent = `Страница ${feedPaginationState.page}`;
+
+    feedPrev.disabled = feedPaginationState.page <= 1;
+    feedNext.disabled = count < feedPaginationState.limit;
+  }
+
+  // ---------- Followers / Following Lists ----------
+
+  async function updateProfileStats(userId) {
+    if (!userId) return;
+    if (profileFollowersCount) profileFollowersCount.textContent = '-';
+    if (profileFollowingCount) profileFollowingCount.textContent = '-';
+
+    try {
+      const [followers, following] = await Promise.all([
+        fetchFollowers(userId),
+        fetchFollowing(userId)
+      ]);
+
+      if (profileFollowersCount) profileFollowersCount.textContent = followers.length;
+      if (profileFollowingCount) profileFollowingCount.textContent = following.length;
+    } catch (error) {
+      console.error('Failed to update profile stats:', error);
+    }
+  }
+
+  async function fetchFollowers(userId) {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/api/v1/users/${userId}/followers`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch followers list');
+    return resp.json();
+  }
+
+  function showFollowersModal(userId) {
+    if (!userId) return;
+    openUserListModal('Followers');
+    userListModalBody.innerHTML = '<div class="muted small">Зарежда се...</div>';
+
+    fetchFollowers(userId)
+      .then(ids => fetchAndRenderUserList(ids))
+      .catch(err => {
+        console.error(err);
+        userListModalBody.innerHTML = '<div class="muted small">Неуспешно зареждане.</div>';
+      });
+  }
+
+  function showFollowingModal(userId) {
+    if (!userId) return;
+    openUserListModal('Following');
+    userListModalBody.innerHTML = '<div class="muted small">Зарежда се...</div>';
+
+    fetchFollowing(userId)
+      .then(ids => fetchAndRenderUserList(ids))
+      .catch(err => {
+        console.error(err);
+        userListModalBody.innerHTML = '<div class="muted small">Неуспешно зареждане.</div>';
+      });
+  }
+
+  function openUserListModal(title) {
+    if (userListModal) {
+      userListModal.classList.remove('hidden');
+      userListModal.setAttribute('aria-hidden', 'false');
+    }
+    if (userListModalTitle) userListModalTitle.textContent = title;
+  }
+
+  function closeUserListModal() {
+    if (userListModal) {
+      userListModal.classList.add('hidden');
+      userListModal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  async function fetchAndRenderUserList(userIds) {
+    if (!userIds || userIds.length === 0) {
+      userListModalBody.innerHTML = '<div class="muted small">Няма потребители.</div>';
+      return;
+    }
+
+    // Fetch details for first 50 users to avoid spamming
+    const idsToFetch = userIds.slice(0, 50);
+    const users = [];
+
+    // Parallel fetch (limit concurrency if needed, but 50 is okay for now)
+    // We can reuse ensureProfilePhoto logic or fetch public profile
+    // Since we don't have a bulk fetch endpoint, we have to fetch one by one or rely on what we have.
+    // Actually, we need names. Let's try to fetch public profile for each.
+    // Optimization: check cache first? We don't have a user cache with names.
+
+    // Let's use a helper that handles errors gracefully
+    const promises = idsToFetch.map(id => fetchUserProfileSafe(id));
+    const results = await Promise.all(promises);
+    const validUsers = results.filter(u => u !== null);
+
+    renderUserListModal(validUsers);
+  }
+
+  async function fetchUserProfileSafe(userId) {
+    try {
+      const resp = await fetch(`${BACKEND_URL}/users/${userId}`, {
+        headers: { 'accept': '*/*', ...getAuthHeaders() }
+      });
+      if (!resp.ok) return { userId: userId, name: 'User ' + userId }; // Fallback
+      return await resp.json();
+    } catch (e) {
+      return { userId: userId, name: 'User ' + userId };
+    }
+  }
+
+  function renderUserListModal(users) {
+    userListModalBody.innerHTML = '';
+    const list = document.createElement('div');
+    list.className = 'likes-list'; // Reuse likes list styling
+
+    users.forEach(u => {
+      const row = document.createElement('div');
+      row.className = 'like-row'; // Reuse
+
+      const avatarUrl = u.profilePictureUrl || getAvatarPlaceholder(u.name);
+
+      // We need to fetch avatar if not present? 
+      // renderLikesModalList uses hydrateUserAvatars. We can do the same.
+
+      row.innerHTML = `
+            <img class="avatar-small" src="${avatarUrl}" alt="${escapeHtml(u.name)}" data-user-avatar="${u.userId}">
+            <span class="like-author" data-user-id="${u.userId}">${escapeHtml(u.name || 'User')}</span>
+        `;
+
+      // Make clickable to go to profile
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', () => {
+        closeUserListModal();
+        openProfile(u.userId);
+      });
+
+      list.appendChild(row);
+    });
+
+    userListModalBody.appendChild(list);
+    hydrateUserAvatars(userListModalBody);
   }
 
   // ---------- Boot ----------
