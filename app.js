@@ -3703,15 +3703,25 @@ try {
     const frag = document.createDocumentFragment();
 
     items.forEach(entry => {
-      // Feed endpoint returns PostWithStatsResponse
-      // Debug: log the entry to see structure
-      if (entry.retweeterName || entry.retweetUserName || entry.retweetUser || entry.retweet || entry.retweetedAt) {
-        console.log('Feed entry with retweet data:', entry);
-      }
+      // Feed endpoint returns PostWithStatsResponse with nested structure
+      // The retweet data is in entry.post.retweeterName, entry.retweetedAt, etc.
+      // We need to flatten this for buildProfilePostCard
 
-      // Check if this is a retweet by looking for retweet-related fields
-      const isRetweet = !!(entry.retweeterName || entry.retweetUserName || entry.retweetUser || entry.retweet || entry.retweetedAt);
-      const card = buildProfilePostCard(entry, isRetweet);
+      const post = entry.post || entry;
+
+      // Create a flattened envelope that buildProfilePostCard expects
+      const envelope = {
+        ...entry,
+        post: post,
+        retweeterName: post.retweeterName || entry.retweeterName,
+        retweetUserName: post.retweetUserName || entry.retweetUserName,
+        retweetedAt: post.retweetedAt || entry.retweetedAt,
+        retweet: entry.retweet || post.retweet
+      };
+
+      // Check if this is a retweet
+      const isRetweet = !!(envelope.retweeterName || envelope.retweetUserName || envelope.retweet || envelope.retweetedAt);
+      const card = buildProfilePostCard(envelope, isRetweet);
       frag.appendChild(card);
     });
 
