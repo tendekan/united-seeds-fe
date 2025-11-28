@@ -1681,4 +1681,42 @@ body {
   .cookie-content button {
     align-self: flex-end;
   }
+}/* Feed View */
+.feed-view {
+    display: grid;
+    gap: 16px;
+}
+
+/* Follow Button */
+.btn-follow {
+    min-width: 100px;
+    transition: all 0.2s ease;
+}
+
+.btn-following {
+    background-color: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.btn-following:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background-color: rgba(227, 101, 91, 0.08);
+}
+
+.btn-following:hover::after {
+    content: "Unfollow";
+    position: absolute;
+    left: 0;
+    right: 0;
+    text-align: center;
+}
+
+.btn-following:hover span {
+    opacity: 0;
+}
+
+.btn-following span {
+    transition: opacity 0.2s ease;
 }

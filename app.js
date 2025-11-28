@@ -188,6 +188,7 @@ try {
   const navServices = document.getElementById('nav-services');
   const navDating = document.getElementById('nav-dating');
   const navSettings = document.getElementById('nav-settings');
+  const navFeed = document.getElementById('nav-feed');
   const profileView = document.getElementById('profile-view');
   const profileViewName = document.getElementById('profile-view-name');
   const profileViewMeta = document.getElementById('profile-view-meta');
@@ -197,6 +198,7 @@ try {
   const profileDobDisplay = document.getElementById('profile-dob-display');
   const profileResidencyDisplay = document.getElementById('profile-residency-display');
   const btnProfileEdit = document.getElementById('btn-profile-edit');
+  const btnProfileFollow = document.getElementById('btn-profile-follow');
   const btnProfileSave = document.getElementById('btn-save-profile');
   const btnProfileCancel = document.getElementById('btn-cancel-profile');
   const profileEditActions = document.getElementById('profile-edit-actions');
@@ -223,6 +225,12 @@ try {
   const svcNext = null;
   const svcPage = null;
   const settingsView = document.getElementById('settings-view');
+  const feedView = document.getElementById('feed-view');
+  const feedPostsList = document.getElementById('feed-posts-list');
+  const feedPagination = document.getElementById('feed-pagination');
+  const feedPrev = document.getElementById('feed-prev');
+  const feedNext = document.getElementById('feed-next');
+  const feedPage = document.getElementById('feed-page');
   const chkUseProfileDating = document.getElementById('opt-use-profile-dating');
   const settingsLanguage = document.getElementById('settings-language');
   const settingsCurrency = document.getElementById('settings-currency');
@@ -328,6 +336,10 @@ try {
     if (navServices) navServices.addEventListener('click', () => showSection('services'));
     if (navDating) navDating.addEventListener('click', () => showSection('dating'));
     if (navSettings) navSettings.addEventListener('click', () => showSection('settings'));
+    if (navFeed) navFeed.addEventListener('click', () => showSection('feed'));
+    if (btnProfileFollow) btnProfileFollow.addEventListener('click', onFollowButtonClick);
+    if (feedPrev) feedPrev.addEventListener('click', () => changeFeedPage(-1));
+    if (feedNext) feedNext.addEventListener('click', () => changeFeedPage(1));
     if (btnPost) btnPost.addEventListener('click', onCreatePost);
     if (btnProfileEdit) btnProfileEdit.addEventListener('click', enterProfileEditMode);
     if (btnProfileSave) btnProfileSave.addEventListener('click', onProfileSave);
@@ -351,6 +363,7 @@ try {
     attachPostEventDelegation(postsList);
     attachPostEventDelegation(profilePostsList);
     attachPostEventDelegation(profileRetweetsList);
+    attachPostEventDelegation(feedPostsList);
   }
 
   document.addEventListener('click', (event) => {
@@ -621,6 +634,7 @@ try {
     if (profileSummary) profileSummary.classList.toggle('is-editing', isProfileEditing);
     if (profileEditActions) profileEditActions.classList.toggle('hidden', !isProfileEditing);
     if (btnProfileEdit) btnProfileEdit.classList.toggle('hidden', !isViewingOwnProfile || isProfileEditing);
+    updateFollowButton(activeProfileUserId);
   }
 
   function setProfileEditingState(enabled) {
@@ -2502,6 +2516,7 @@ try {
     if (servicesView) servicesView.classList.add('hidden');
     if (datingView) datingView.classList.add('hidden');
     if (settingsView) settingsView.classList.add('hidden');
+    if (feedView) feedView.classList.add('hidden');
     if (profileView) profileView.classList.add('hidden');
     if (postsList) postsList.classList.add('hidden');
     if (postsPagination) postsPagination.classList.add('hidden');
@@ -2522,6 +2537,9 @@ try {
       if (datingView) datingView.classList.remove('hidden');
     } else if (section === 'settings') {
       if (settingsView) settingsView.classList.remove('hidden');
+    } else if (section === 'feed') {
+      if (feedView) feedView.classList.remove('hidden');
+      loadFeed();
     } else {
       if (postsList) postsList.classList.remove('hidden');
       if (currentRemoteCategory) {
@@ -3499,6 +3517,191 @@ try {
     saveToStorage(STORAGE_KEYS.auth, authState);
     resetLikeCaches();
     renderAuthUI();
+  }
+
+  // ---------- Feed & Follow ----------
+  let feedPaginationState = { page: 1, limit: 10, hasMore: true };
+
+  async function onFollowButtonClick() {
+    if (!authState) {
+      openAuthModal('Влез');
+      return;
+    }
+    const targetUserId = normalizeUserId(activeProfileUserId);
+    if (!targetUserId) return;
+
+    const btn = document.getElementById('btn-profile-follow');
+    if (!btn) return;
+
+    const isFollowing = btn.classList.contains('btn-following');
+    btn.disabled = true;
+
+    try {
+      if (isFollowing) {
+        await unfollowUser(targetUserId);
+        btn.classList.remove('btn-following');
+        btn.classList.add('btn-primary');
+        btn.querySelector('span').textContent = 'Follow';
+        showToast('Вече не следвате този потребител.');
+      } else {
+        await followUser(targetUserId);
+        btn.classList.add('btn-following');
+        btn.classList.remove('btn-primary');
+        btn.querySelector('span').textContent = 'Following';
+        showToast('Вече следвате този потребител.');
+      }
+    } catch (error) {
+      console.error('Failed to toggle follow:', error);
+      showToast('Възникна грешка. Моля, опитайте отново.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function updateFollowButton(targetUserId) {
+    const btn = document.getElementById('btn-profile-follow');
+    if (!btn) return;
+
+    if (!authState || !targetUserId || normalizeUserId(authState.userId) === normalizeUserId(targetUserId)) {
+      btn.classList.add('hidden');
+      return;
+    }
+
+    btn.classList.remove('hidden');
+    // Reset state while loading
+    btn.disabled = true;
+
+    try {
+      const following = await fetchFollowing(authState.userId);
+      const isFollowing = following.includes(targetUserId);
+
+      if (isFollowing) {
+        btn.classList.add('btn-following');
+        btn.classList.remove('btn-primary');
+        btn.querySelector('span').textContent = 'Following';
+      } else {
+        btn.classList.remove('btn-following');
+        btn.classList.add('btn-primary');
+        btn.querySelector('span').textContent = 'Follow';
+      }
+    } catch (error) {
+      console.error('Failed to check follow status:', error);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function followUser(userId) {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/api/v1/users/${userId}/follow`, {
+      method: 'POST',
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to follow user');
+  }
+
+  async function unfollowUser(userId) {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/api/v1/users/${userId}/follow`, {
+      method: 'DELETE',
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to unfollow user');
+  }
+
+  async function fetchFollowing(userId) {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/api/v1/users/${userId}/following`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch following list');
+    return resp.json();
+  }
+
+  async function loadFeed() {
+    if (!authState) {
+      if (feedPostsList) feedPostsList.innerHTML = '<div class="muted">Моля, влезте в профила си, за да видите новините.</div>';
+      return;
+    }
+
+    feedPaginationState.page = 1;
+    feedPaginationState.hasMore = true;
+    await fetchAndRenderFeedPosts();
+  }
+
+  async function changeFeedPage(delta) {
+    const newPage = feedPaginationState.page + delta;
+    if (newPage < 1) return;
+
+    feedPaginationState.page = newPage;
+    await fetchAndRenderFeedPosts();
+  }
+
+  async function fetchAndRenderFeedPosts() {
+    if (!feedPostsList) return;
+
+    feedPostsList.innerHTML = '<div class="muted">Зареждане...</div>';
+    if (feedPagination) feedPagination.classList.add('hidden');
+
+    try {
+      const offset = (feedPaginationState.page - 1) * feedPaginationState.limit;
+      const data = await fetchFeed(feedPaginationState.limit, offset);
+
+      if (!data || data.length === 0) {
+        if (feedPaginationState.page === 1) {
+          feedPostsList.innerHTML = '<div class="muted">Няма новини. Последвайте някого, за да видите техните публикации тук!</div>';
+        } else {
+          feedPostsList.innerHTML = '<div class="muted">Няма повече публикации.</div>';
+          feedPaginationState.hasMore = false;
+        }
+      } else {
+        renderFeedPosts(data);
+      }
+
+      updateFeedPagination(data ? data.length : 0);
+
+    } catch (error) {
+      console.error('Failed to load feed:', error);
+      feedPostsList.innerHTML = '<div class="muted">Неуспешно зареждане на новините.</div>';
+    }
+  }
+
+  async function fetchFeed(limit, offset) {
+    const resp = await authenticatedFetch(`${BACKEND_URL}/api/v1/feed?limit=${limit}&offset=${offset}`, {
+      headers: { 'accept': '*/*', ...getAuthHeaders() }
+    });
+    if (!resp.ok) throw new Error('Failed to fetch feed');
+    return resp.json();
+  }
+
+  function renderFeedPosts(items) {
+    if (!feedPostsList) return;
+    feedPostsList.innerHTML = '';
+
+    const frag = document.createDocumentFragment();
+
+    items.forEach(entry => {
+      // Feed endpoint returns PostWithStatsResponse
+      const card = buildProfilePostCard(entry);
+      frag.appendChild(card);
+    });
+
+    feedPostsList.appendChild(frag);
+    initializePostLikeButtons(feedPostsList);
+    initializePostRetweetButtons(feedPostsList);
+    hydrateUserAvatars(feedPostsList);
+  }
+
+  function updateFeedPagination(count) {
+    if (!feedPagination || !feedPrev || !feedNext || !feedPage) return;
+
+    if (feedPaginationState.page === 1 && count === 0) {
+      feedPagination.classList.add('hidden');
+      return;
+    }
+
+    feedPagination.classList.remove('hidden');
+    feedPage.textContent = `Страница ${feedPaginationState.page}`;
+
+    feedPrev.disabled = feedPaginationState.page <= 1;
+    feedNext.disabled = count < feedPaginationState.limit;
   }
 
   // ---------- Boot ----------

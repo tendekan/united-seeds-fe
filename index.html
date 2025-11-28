@@ -109,6 +109,8 @@
                     <nav class="menu">
                         <button id="nav-profile" class="menu-item" title="Моят профил"><span
                                 class="menu-icon">👤</span><span>Моят профил</span></button>
+                        <button id="nav-feed" class="menu-item" title="Новини"><span
+                                class="menu-icon">📰</span><span>Новини</span></button>
                         <button id="nav-create" class="menu-item" title="Създай публикация"><span
                                 class="menu-icon">✍️</span><span>Създай публикация</span></button>
                         <button id="nav-services" class="menu-item" title="Услуги"><span
@@ -127,6 +129,9 @@
                                 <p id="profile-view-meta" class="muted small"></p>
                             </div>
                             <div class="profile-header-actions">
+                                <button id="btn-profile-follow" class="btn btn-primary hidden" type="button">
+                                    <span>Follow</span>
+                                </button>
                                 <button id="btn-profile-edit" class="btn btn-secondary hidden" type="button">
                                     <span>✏️ Редактирай</span>
                                 </button>
@@ -285,6 +290,17 @@
                                 src="https://images.unsplash.com/photo-1584467735871-3316d0b4f63a?q=80&w=1200&auto=format&fit=crop"
                                 alt="Възрастна двойка се усмихва заедно" onerror="this.style.display='none'" />
                             <div class="dating-slogan">Намери своя идеален партньор сега</div>
+                        </div>
+                    </div>
+                    <div id="feed-view" class="feed-view hidden">
+                        <div class="section-title">
+                            <h3>Новини от хора, които следвате</h3>
+                        </div>
+                        <div id="feed-posts-list" class="posts-list"></div>
+                        <div id="feed-pagination" class="pagination hidden">
+                            <button id="feed-prev" class="btn btn-secondary" disabled>Предишна</button>
+                            <span id="feed-page" class="muted" style="margin: 0 8px;">Страница 1</span>
+                            <button id="feed-next" class="btn btn-secondary">Следваща</button>
                         </div>
                     </div>
                     <div id="settings-view" class="settings-view hidden">
