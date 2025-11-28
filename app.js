@@ -789,7 +789,9 @@ try {
     const authorMarkup = buildUserProfileLabel(post.facebookName || post.userId || 'Потребител', ownerId, 'owner-name');
     const stats = buildPostStats(envelope);
     let retweetLabel = 'Споделено';
-    if (envelope.retweetUserName) {
+    if (envelope.retweeterName) {
+      retweetLabel = `${escapeHtml(envelope.retweeterName)} сподели`;
+    } else if (envelope.retweetUserName) {
       retweetLabel = `${escapeHtml(envelope.retweetUserName)} сподели`;
     } else if (envelope.retweetUser && envelope.retweetUser.name) {
       retweetLabel = `${escapeHtml(envelope.retweetUser.name)} сподели`;
@@ -3817,22 +3819,21 @@ try {
       return;
     }
 
-    // Fetch details for first 50 users to avoid spamming
-    const idsToFetch = userIds.slice(0, 50);
-    const users = [];
+    // Backend now returns objects with userId and name, not just IDs
+    // Check if we have objects or just IDs
+    const isObjectArray = userIds.length > 0 && typeof userIds[0] === 'object';
 
-    // Parallel fetch (limit concurrency if needed, but 50 is okay for now)
-    // We can reuse ensureProfilePhoto logic or fetch public profile
-    // Since we don't have a bulk fetch endpoint, we have to fetch one by one or rely on what we have.
-    // Actually, we need names. Let's try to fetch public profile for each.
-    // Optimization: check cache first? We don't have a user cache with names.
-
-    // Let's use a helper that handles errors gracefully
-    const promises = idsToFetch.map(id => fetchUserProfileSafe(id));
-    const results = await Promise.all(promises);
-    const validUsers = results.filter(u => u !== null);
-
-    renderUserListModal(validUsers);
+    if (isObjectArray) {
+      // Backend returns { userId, name } objects
+      renderUserListModal(userIds.slice(0, 50));
+    } else {
+      // Fallback: still just IDs, fetch details
+      const idsToFetch = userIds.slice(0, 50);
+      const promises = idsToFetch.map(id => fetchUserProfileSafe(id));
+      const results = await Promise.all(promises);
+      const validUsers = results.filter(u => u !== null);
+      renderUserListModal(validUsers);
+    }
   }
 
   async function fetchUserProfileSafe(userId) {
