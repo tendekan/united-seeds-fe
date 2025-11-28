@@ -1765,7 +1765,7 @@ body {
 /* Fix follow button to prevent text movement */
 .btn-following {
   position: relative;
-  min-width: 100px;
+  min-width: 120px;
 }
 
 .btn-following::after {
@@ -1777,6 +1777,7 @@ body {
   opacity: 0;
   transition: opacity 0.2s ease;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 .btn-following:hover::after {

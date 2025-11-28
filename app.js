@@ -3598,7 +3598,11 @@ try {
 
     try {
       const following = await fetchFollowing(authState.userId);
-      const isFollowing = following.includes(targetUserId);
+      // Check if targetUserId is in the following list (array of IDs or objects)
+      const isFollowing = following.some(item => {
+        const id = typeof item === 'object' ? item.userId : item;
+        return String(id) === String(targetUserId);
+      });
 
       if (isFollowing) {
         btn.classList.add('btn-following');
