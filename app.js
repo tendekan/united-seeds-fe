@@ -1184,7 +1184,7 @@ try {
   function openAuthModal(mode) {
     if (authModalTitle) {
       if (mode === 'Влез') {
-        authModalTitle.textContent = 'Влезни в системата';
+        authModalTitle.textContent = 'Влез в системата';
       } else if (mode === 'Регистрирай се') {
         authModalTitle.textContent = 'Продължи към регистрация';
       } else {
@@ -1306,7 +1306,7 @@ try {
       profileName.textContent = authState.name || 'Потребител';
       profileEmail.textContent = authState.email || '';
       renderPosts();
-      onNavigateToOwnProfile();
+      showSection('feed');
     } else {
       authOutEl.classList.remove('hidden');
       authInEl.classList.add('hidden');
