@@ -1723,6 +1723,35 @@ body {
   transition: opacity 0.2s ease;
 }
 
+/* Profile Stats */
+.profile-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.btn-stat {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.btn-stat:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.stat-value {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
 /* Avatar sizes */
 .avatar-small {
   width: 32px;
@@ -1731,4 +1760,29 @@ body {
   object-fit: cover;
   vertical-align: middle;
   margin-right: 8px;
+}
+
+/* Fix follow button to prevent text movement */
+.btn-following {
+  position: relative;
+  min-width: 100px;
+}
+
+.btn-following::after {
+  content: 'Не следвай';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.btn-following:hover::after {
+  opacity: 1;
+}
+
+.btn-following:hover span {
+  opacity: 0;
 }
