@@ -3572,7 +3572,7 @@ try {
         await followUser(targetUserId);
         btn.classList.add('btn-following');
         btn.classList.remove('btn-primary');
-        btn.querySelector('span').textContent = 'Следва';
+        btn.querySelector('span').textContent = 'Последвани';
         showToast('Вече следвате този потребител.');
       }
     } catch (error) {
@@ -3607,7 +3607,7 @@ try {
       if (isFollowing) {
         btn.classList.add('btn-following');
         btn.classList.remove('btn-primary');
-        btn.querySelector('span').textContent = 'Следва';
+        btn.querySelector('span').textContent = 'Последвани';
       } else {
         btn.classList.remove('btn-following');
         btn.classList.add('btn-primary');
@@ -3808,7 +3808,7 @@ try {
 
   function showFollowingModal(userId) {
     if (!userId) return;
-    openUserListModal('Следва');
+    openUserListModal('Последвани');
     userListModalBody.innerHTML = '<div class="muted small">Зарежда се...</div>';
 
     fetchFollowing(userId)

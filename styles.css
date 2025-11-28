@@ -1699,24 +1699,14 @@ body {
   background-color: transparent;
   border: 1px solid var(--border);
   color: var(--text);
+  position: relative;
+  min-width: 140px;
 }
 
 .btn-following:hover {
   border-color: var(--danger);
   color: var(--danger);
   background-color: rgba(227, 101, 91, 0.08);
-}
-
-.btn-following:hover::after {
-  content: "Unfollow";
-  position: absolute;
-  left: 0;
-  right: 0;
-  text-align: center;
-}
-
-.btn-following:hover span {
-  opacity: 0;
 }
 
 .btn-following span {
@@ -1760,30 +1750,4 @@ body {
   object-fit: cover;
   vertical-align: middle;
   margin-right: 8px;
-}
-
-/* Fix follow button to prevent text movement */
-.btn-following {
-  position: relative;
-  min-width: 140px;
-}
-
-.btn-following::after {
-  content: 'Не следвай';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-.btn-following:hover::after {
-  opacity: 1;
-}
-
-.btn-following:hover span {
-  opacity: 0;
 }
