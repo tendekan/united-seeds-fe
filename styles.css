@@ -1765,7 +1765,7 @@ body {
 /* Fix follow button to prevent text movement */
 .btn-following {
   position: relative;
-  min-width: 120px;
+  min-width: 140px;
 }
 
 .btn-following::after {

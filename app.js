@@ -3870,35 +3870,19 @@ try {
   }
 
   function renderUserListModal(users) {
-    userListModalBody.innerHTML = '';
-    const list = document.createElement('div');
-    list.className = 'likes-list'; // Reuse likes list styling
+    if (!userListModalBody) return;
+    if (!users || !users.length) {
+      userListModalBody.innerHTML = '<div class="like-empty">Няма потребители.</div>';
+      return;
+    }
 
-    users.forEach(u => {
-      const row = document.createElement('div');
-      row.className = 'like-row'; // Reuse
-
-      const avatarUrl = u.profilePictureUrl || getAvatarPlaceholder(u.name);
-
-      // We need to fetch avatar if not present? 
-      // renderLikesModalList uses hydrateUserAvatars. We can do the same.
-
-      row.innerHTML = `
-            <img class="avatar-small" src="${avatarUrl}" alt="${escapeHtml(u.name)}" data-user-avatar="${u.userId}">
-            <span class="like-author" data-user-id="${u.userId}">${escapeHtml(u.name || 'User')}</span>
-        `;
-
-      // Make clickable to go to profile
-      row.style.cursor = 'pointer';
-      row.addEventListener('click', () => {
-        closeUserListModal();
-        openProfile(u.userId);
-      });
-
-      list.appendChild(row);
+    const safeUsers = users.map(u => {
+      const name = (u?.name || '').trim() || `Потребител${u?.userId ? ' #' + u.userId : ''}`;
+      const label = buildUserProfileLabel(name, u?.userId, 'like-name');
+      return { label };
     });
 
-    userListModalBody.appendChild(list);
+    userListModalBody.innerHTML = safeUsers.map(item => `<div class="like-user">${item.label}</div>`).join('');
     hydrateUserAvatars(userListModalBody);
   }
 
