@@ -3704,6 +3704,11 @@ try {
 
     items.forEach(entry => {
       // Feed endpoint returns PostWithStatsResponse
+      // Debug: log the entry to see structure
+      if (entry.retweeterName || entry.retweetUserName || entry.retweetUser || entry.retweet || entry.retweetedAt) {
+        console.log('Feed entry with retweet data:', entry);
+      }
+
       // Check if this is a retweet by looking for retweet-related fields
       const isRetweet = !!(entry.retweeterName || entry.retweetUserName || entry.retweetUser || entry.retweet || entry.retweetedAt);
       const card = buildProfilePostCard(entry, isRetweet);
