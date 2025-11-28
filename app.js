@@ -3704,7 +3704,9 @@ try {
 
     items.forEach(entry => {
       // Feed endpoint returns PostWithStatsResponse
-      const card = buildProfilePostCard(entry);
+      // Check if this is a retweet by looking for retweet-related fields
+      const isRetweet = !!(entry.retweeterName || entry.retweetUserName || entry.retweetUser || entry.retweet || entry.retweetedAt);
+      const card = buildProfilePostCard(entry, isRetweet);
       frag.appendChild(card);
     });
 

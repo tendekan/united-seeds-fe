@@ -1722,3 +1722,11 @@ body {
 .btn-following span {
   transition: opacity 0.2s ease;
 }
+
+/* Avatar sizes */
+.avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
