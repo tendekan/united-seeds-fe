@@ -3575,6 +3575,8 @@ try {
         btn.querySelector('span').textContent = 'Прекрати следването';
         showToast('Вече следвате този потребител.');
       }
+      // Refresh the followers/following counts
+      await updateProfileStats(targetUserId);
     } catch (error) {
       console.error('Failed to toggle follow:', error);
       showToast('Възникна грешка. Моля, опитайте отново.', 'error');
