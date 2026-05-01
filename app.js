@@ -4006,11 +4006,7 @@ try {
     try {
       const resp = await authenticatedFetch(`${BACKEND_URL}/api/v1/chatbot/ask`, {
         method: 'POST',
-        headers: {
-          'accept': '*/*',
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        },
+        headers: { 'accept': '*/*', 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ question })
       });
 
