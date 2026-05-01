@@ -253,6 +253,13 @@ try {
   const photoModal = document.getElementById('photo-modal');
   const photoModalClose = document.getElementById('photo-modal-close');
   const photoModalImg = document.getElementById('photo-modal-img');
+  const chatbotToggle = document.getElementById('chatbot-toggle');
+  const chatbotPanel = document.getElementById('chatbot-panel');
+  const chatbotClose = document.getElementById('chatbot-close');
+  const chatbotMessages = document.getElementById('chatbot-messages');
+  const chatbotForm = document.getElementById('chatbot-form');
+  const chatbotInput = document.getElementById('chatbot-input');
+  const chatbotSend = document.getElementById('chatbot-send');
 
   // ---------- Initialization ----------
   function init() {
@@ -274,6 +281,7 @@ try {
     attachPostEventDelegation(profilePostsList);
     attachPostEventDelegation(profileRetweetsList);
     initCookieConsent();
+    setupChatbot();
   }
 
   function initCookieConsent() {
@@ -1307,6 +1315,7 @@ try {
       profileEmail.textContent = authState.email || '';
       renderPosts();
       showSection('feed');
+      setChatbotAvailable(true);
     } else {
       authOutEl.classList.remove('hidden');
       authInEl.classList.add('hidden');
@@ -1320,6 +1329,7 @@ try {
       profilePic.src = '';
       profileName.textContent = '';
       profileEmail.textContent = '';
+      setChatbotAvailable(false);
     }
   }
 
@@ -3886,6 +3896,151 @@ try {
 
     userListModalBody.innerHTML = safeUsers.map(item => `<div class="like-user">${item.label}</div>`).join('');
     hydrateUserAvatars(userListModalBody);
+  }
+
+  // ---------- Chatbot ----------
+  let chatbotPending = false;
+
+  function setupChatbot() {
+    if (!chatbotToggle || !chatbotPanel) return;
+    if (chatbotToggle) chatbotToggle.addEventListener('click', toggleChatbotPanel);
+    if (chatbotClose) chatbotClose.addEventListener('click', () => setChatbotPanelOpen(false));
+    if (chatbotForm) chatbotForm.addEventListener('submit', onChatbotSubmit);
+    if (chatbotInput) {
+      chatbotInput.addEventListener('input', autoResizeChatbotInput);
+      chatbotInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (chatbotForm) chatbotForm.requestSubmit();
+        }
+      });
+    }
+    setChatbotAvailable(Boolean(authState));
+  }
+
+  function setChatbotAvailable(available) {
+    if (!chatbotToggle) return;
+    if (available) {
+      chatbotToggle.classList.remove('hidden');
+    } else {
+      chatbotToggle.classList.add('hidden');
+      setChatbotPanelOpen(false);
+    }
+  }
+
+  function setChatbotPanelOpen(open) {
+    if (!chatbotPanel || !chatbotToggle) return;
+    if (open) {
+      chatbotPanel.classList.remove('hidden');
+      chatbotPanel.setAttribute('aria-hidden', 'false');
+      chatbotToggle.setAttribute('aria-expanded', 'true');
+      if (chatbotMessages && !chatbotMessages.children.length) {
+        appendChatbotMessage('Здравейте! С какво мога да помогна?', 'bot');
+      }
+      if (chatbotInput) {
+        setTimeout(() => chatbotInput.focus(), 50);
+      }
+    } else {
+      chatbotPanel.classList.add('hidden');
+      chatbotPanel.setAttribute('aria-hidden', 'true');
+      chatbotToggle.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  function toggleChatbotPanel() {
+    if (!chatbotPanel) return;
+    setChatbotPanelOpen(chatbotPanel.classList.contains('hidden'));
+  }
+
+  function autoResizeChatbotInput() {
+    if (!chatbotInput) return;
+    chatbotInput.style.height = 'auto';
+    chatbotInput.style.height = Math.min(chatbotInput.scrollHeight, 120) + 'px';
+  }
+
+  function appendChatbotMessage(text, role) {
+    if (!chatbotMessages) return null;
+    const div = document.createElement('div');
+    div.className = `chatbot-message ${role}`;
+    div.textContent = text;
+    chatbotMessages.appendChild(div);
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    return div;
+  }
+
+  function extractChatbotAnswer(payload) {
+    if (payload == null) return '';
+    if (typeof payload === 'string') return payload;
+    if (typeof payload !== 'object') return String(payload);
+    const candidates = ['answer', 'response', 'reply', 'message', 'text', 'result', 'output'];
+    for (const key of candidates) {
+      const value = payload[key];
+      if (typeof value === 'string' && value.trim()) return value;
+    }
+    try {
+      return JSON.stringify(payload);
+    } catch (e) {
+      return String(payload);
+    }
+  }
+
+  async function onChatbotSubmit(event) {
+    event.preventDefault();
+    if (chatbotPending) return;
+    if (!authState) {
+      setChatbotPanelOpen(false);
+      openAuthModal('Влез');
+      return;
+    }
+    const question = (chatbotInput?.value || '').trim();
+    if (!question) return;
+
+    appendChatbotMessage(question, 'user');
+    chatbotInput.value = '';
+    autoResizeChatbotInput();
+
+    chatbotPending = true;
+    if (chatbotSend) chatbotSend.disabled = true;
+    const typingEl = appendChatbotMessage('Пише…', 'bot typing');
+
+    try {
+      const resp = await authenticatedFetch(`${BACKEND_URL}/api/v1/chatbot/ask`, {
+        method: 'POST',
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({ question })
+      });
+
+      let payload = null;
+      const contentType = resp.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        payload = await resp.json().catch(() => null);
+      } else {
+        const text = await resp.text().catch(() => '');
+        payload = text;
+      }
+
+      if (typingEl && typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+
+      if (!resp.ok) {
+        appendChatbotMessage('Възникна грешка. Моля, опитайте отново.', 'error');
+        return;
+      }
+
+      const answer = extractChatbotAnswer(payload) || 'Няма отговор.';
+      appendChatbotMessage(answer, 'bot');
+    } catch (e) {
+      console.error('Chatbot request failed', e);
+      if (typingEl && typingEl.parentNode) typingEl.parentNode.removeChild(typingEl);
+      appendChatbotMessage('Неуспешна връзка със сървъра.', 'error');
+    } finally {
+      chatbotPending = false;
+      if (chatbotSend) chatbotSend.disabled = false;
+      if (chatbotInput) chatbotInput.focus();
+    }
   }
 
   // ---------- Boot ----------
